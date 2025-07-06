@@ -19,11 +19,17 @@
                 <p style="margin-bottom: 20px; color: #666;">Guess the mystery NFL player in 8 tries!</p>
                 
                 <div style="margin-bottom: 20px;">
-                    <div style="margin-bottom: 10px;">
-                        <label for="playerSelect" style="display: block; margin-bottom: 5px; font-weight: bold;">Select a player:</label>
-                        <select id="playerSelect" style="width: 300px; padding: 8px; font-size: 16px; border: 2px solid #ccc;">
-                            <option value="">Loading players...</option>
-                        </select>
+                    <div style="margin-bottom: 10px; position: relative;">
+                        <label for="playerInput" style="display: block; margin-bottom: 5px; font-weight: bold;">Search for a player:</label>
+                        <input 
+                            id="playerInput" 
+                            type="text" 
+                            placeholder="Type player name, team, or position..."
+                            style="width: 300px; padding: 8px; font-size: 16px; border: 2px solid #ccc; border-radius: 4px;"
+                            autocomplete="off"
+                        />
+                        <div id="playerDropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #ccc; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; display: none; z-index: 1000;">
+                        </div>
                     </div>
                     <button id="guessButton" onclick="makeGuess()" disabled style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: not-allowed; font-size: 16px; margin-top: 10px;">
                         Make Guess
@@ -62,7 +68,7 @@
                 </div>
                 
                 <div style="margin-top: 20px; font-size: 0.9rem; color: #666;">
-                    <p><strong>How to play:</strong> Guess the mystery NFL player using the dropdown menu.</p>
+                    <p><strong>How to play:</strong> Type to search for players by name, team, or position. Use arrow keys to navigate, Enter to select.</p>
                     <p>🟢 <strong>Green:</strong> Correct match | 🟡 <strong>Yellow:</strong> Close (within 3 TDs or 200 yards) | ⬜ <strong>Gray:</strong> Wrong</p>
                     <p>↑ <strong>Arrow up:</strong> Target is higher | ↓ <strong>Arrow down:</strong> Target is lower</p>
                 </div>
@@ -94,7 +100,7 @@
                 };
             });
             
-            populatePlayerDropdown();
+            setupSearchableDropdown();
             selectRandomTarget();
             
         } catch (error) {
@@ -125,36 +131,157 @@
         return result;
     }
     
-    function populatePlayerDropdown() {
-        const select = document.getElementById('playerSelect');
+    let selectedPlayerIndex = null;
+    let filteredPlayers = [];
+    let highlightedIndex = -1;
+    
+    function setupSearchableDropdown() {
+        const input = document.getElementById('playerInput');
+        const dropdown = document.getElementById('playerDropdown');
         
         // Sort players alphabetically but keep original indices
         const sortedPlayers = playersData
             .map((player, originalIndex) => ({ player, originalIndex }))
             .sort((a, b) => a.player.Player.localeCompare(b.player.Player));
         
-        select.innerHTML = '<option value="">Choose a player...</option>';
-        
-        sortedPlayers.forEach(({ player, originalIndex }) => {
-            const option = document.createElement('option');
-            option.value = originalIndex; // Use original index from playersData
-            option.textContent = `${player.Player} (${player.Team} ${player.Position})`;
-            select.appendChild(option);
+        // Input event for filtering
+        input.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            if (searchTerm.length === 0) {
+                hideDropdown();
+                clearSelection();
+                return;
+            }
+            
+            // Filter players based on name, team, or position
+            filteredPlayers = sortedPlayers.filter(({ player }) => 
+                player.Player.toLowerCase().includes(searchTerm) ||
+                player.Team.toLowerCase().includes(searchTerm) ||
+                player.Position.toLowerCase().includes(searchTerm)
+            );
+            
+            highlightedIndex = -1;
+            showFilteredResults();
         });
         
-        // Enable the guess button when a player is selected
-        select.addEventListener('change', function() {
-            const guessButton = document.getElementById('guessButton');
-            if (this.value !== '' && !gameOver) {
-                guessButton.disabled = false;
-                guessButton.style.cursor = 'pointer';
-                guessButton.style.background = '#007cba';
-            } else {
-                guessButton.disabled = true;
-                guessButton.style.cursor = 'not-allowed';
-                guessButton.style.background = '#ccc';
+        // Focus event
+        input.addEventListener('focus', function() {
+            if (this.value.length > 0) {
+                showFilteredResults();
             }
         });
+        
+        // Keyboard navigation
+        input.addEventListener('keydown', function(e) {
+            if (filteredPlayers.length === 0) return;
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    highlightedIndex = Math.min(highlightedIndex + 1, filteredPlayers.length - 1);
+                    updateHighlight();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                    updateHighlight();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (highlightedIndex >= 0) {
+                        selectPlayer(filteredPlayers[highlightedIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    hideDropdown();
+                    break;
+            }
+        });
+        
+        // Click outside to close
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                hideDropdown();
+            }
+        });
+    }
+    
+    function showFilteredResults() {
+        const dropdown = document.getElementById('playerDropdown');
+        
+        if (filteredPlayers.length === 0) {
+            dropdown.innerHTML = '<div style="padding: 10px; color: #666;">No players found</div>';
+        } else {
+            dropdown.innerHTML = filteredPlayers.map(({ player, originalIndex }, index) => 
+                `<div class="player-option" data-index="${originalIndex}" data-highlight-index="${index}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;">
+                    ${player.Player} <span style="color: #666;">(${player.Team} ${player.Position})</span>
+                </div>`
+            ).join('');
+            
+            // Add click listeners to options
+            dropdown.querySelectorAll('.player-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const originalIndex = parseInt(this.dataset.index);
+                    const playerData = playersData[originalIndex];
+                    selectPlayer({ player: playerData, originalIndex });
+                });
+                
+                option.addEventListener('mouseenter', function() {
+                    highlightedIndex = parseInt(this.dataset.highlightIndex);
+                    updateHighlight();
+                });
+            });
+        }
+        
+        dropdown.style.display = 'block';
+    }
+    
+    function updateHighlight() {
+        const dropdown = document.getElementById('playerDropdown');
+        const options = dropdown.querySelectorAll('.player-option');
+        
+        options.forEach((option, index) => {
+            if (index === highlightedIndex) {
+                option.style.background = '#007cba';
+                option.style.color = 'white';
+            } else {
+                option.style.background = 'white';
+                option.style.color = 'black';
+            }
+        });
+    }
+    
+    function selectPlayer({ player, originalIndex }) {
+        const input = document.getElementById('playerInput');
+        
+        input.value = player.Player;
+        selectedPlayerIndex = originalIndex;
+        hideDropdown();
+        updateGuessButton();
+    }
+    
+    function hideDropdown() {
+        document.getElementById('playerDropdown').style.display = 'none';
+        highlightedIndex = -1;
+    }
+    
+    function clearSelection() {
+        selectedPlayerIndex = null;
+        updateGuessButton();
+    }
+    
+    function updateGuessButton() {
+        const guessButton = document.getElementById('guessButton');
+        if (selectedPlayerIndex !== null && !gameOver) {
+            guessButton.disabled = false;
+            guessButton.style.cursor = 'pointer';
+            guessButton.style.background = '#007cba';
+        } else {
+            guessButton.disabled = true;
+            guessButton.style.cursor = 'not-allowed';
+            guessButton.style.background = '#ccc';
+        }
     }
     
     function selectRandomTarget() {
@@ -164,12 +291,9 @@
     }
     
     function makeGuess() {
-        const select = document.getElementById('playerSelect');
-        const selectedIndex = parseInt(select.value);
+        if (selectedPlayerIndex === null || gameOver) return;
         
-        if (isNaN(selectedIndex) || gameOver) return;
-        
-        const guessedPlayer = playersData[selectedIndex];
+        const guessedPlayer = playersData[selectedPlayerIndex];
         
         // Check if already guessed
         if (guesses.some(g => g.Player === guessedPlayer.Player)) {
@@ -192,11 +316,11 @@
         
         updateGuessCount();
         
-        // Reset dropdown
-        select.value = '';
-        document.getElementById('guessButton').disabled = true;
-        document.getElementById('guessButton').style.cursor = 'not-allowed';
-        document.getElementById('guessButton').style.background = '#ccc';
+        // Reset input
+        document.getElementById('playerInput').value = '';
+        selectedPlayerIndex = null;
+        hideDropdown();
+        updateGuessButton();
     }
     
     function updateGuessesDisplay() {
@@ -301,14 +425,12 @@
         document.getElementById('guessesHeader').style.display = 'none';
         document.getElementById('gameStatus').innerHTML = '';
         document.getElementById('guessCount').textContent = '0';
-        document.getElementById('playerSelect').value = '';
+        document.getElementById('playerInput').value = '';
         
+        selectedPlayerIndex = null;
+        hideDropdown();
         selectRandomTarget();
-        
-        const guessButton = document.getElementById('guessButton');
-        guessButton.disabled = true;
-        guessButton.style.cursor = 'not-allowed';
-        guessButton.style.background = '#ccc';
+        updateGuessButton();
     }
     
     // Global functions
