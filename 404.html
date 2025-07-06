@@ -56,6 +56,10 @@
                 const gameName = path.split('/home/')[1];
                 // Redirect to hash-based URL
                 window.location.replace(`/#/home/${gameName}`);
+            } else if (path.startsWith('/category/') && path !== '/category/') {
+                const categoryName = path.split('/category/')[1];
+                // Redirect to hash-based URL
+                window.location.replace(`/#/category/${categoryName}`);
             }
         })();
     </script>

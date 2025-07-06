@@ -1,7 +1,31 @@
+// Game categories data structure
+const gameCategories = {
+    arcade: {
+        name: "Arcade Games",
+        games: [
+            { id: "snake", name: "Snake", description: "Classic snake game" },
+            { id: "pong", name: "Pong", description: "Retro paddle game" },
+            { id: "breakout", name: "Breakout", description: "Brick breaking game" }
+        ]
+    },
+    puzzle: {
+        name: "Puzzle Games",
+        games: [
+            { id: "tetris", name: "Tetris", description: "Block puzzle game" },
+            { id: "memory", name: "Memory", description: "Card matching game" }
+        ]
+    }
+};
+
 // Navigation function for games
 function navigateToGame(gameName) {
     // Change URL to #/home/gamename format (hash routing)
     window.location.hash = `/home/${gameName}`;
+}
+
+// Navigation function for categories
+function navigateToCategory(categoryName) {
+    window.location.hash = `/category/${categoryName}`;
 }
 
 // Handle back navigation and URL routing
@@ -16,6 +40,9 @@ function handleRoute() {
     if (hash.startsWith('#/home/') && hash !== '#/home/') {
         const gameName = hash.split('#/home/')[1];
         loadGame(gameName);
+    } else if (hash.startsWith('#/category/') && hash !== '#/category/') {
+        const categoryName = hash.split('#/category/')[1];
+        showCategory(categoryName);
     } else if (hash === '' || hash === '#' || hash === '#/') {
         // Show homepage
         showHomepage();
@@ -31,13 +58,22 @@ function loadGame(gameName) {
         loadBreakoutGame();
     } else {
         // Show placeholder for other games
+        const gameCategory = findGameCategory(gameName);
+        const categoryButton = gameCategory ? 
+            `<button onclick="navigateToCategory('${gameCategory}')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                Back to ${gameCategories[gameCategory].name}
+            </button>` : '';
+        
         document.body.innerHTML = `
             <div class="container">
                 <header>
                     <h1>${gameName.charAt(0).toUpperCase() + gameName.slice(1)}</h1>
-                    <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
-                        Back to Home
-                    </button>
+                    <div style="margin-bottom: 20px;">
+                        <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
+                            Back to Home
+                        </button>
+                        ${categoryButton}
+                    </div>
                 </header>
                 <main style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
                     <div style="text-align: center; border: 2px solid black; padding: 40px;">
@@ -50,6 +86,16 @@ function loadGame(gameName) {
     }
 }
 
+// Helper function to find which category a game belongs to
+function findGameCategory(gameName) {
+    for (const [categoryKey, category] of Object.entries(gameCategories)) {
+        if (category.games.some(game => game.id === gameName)) {
+            return categoryKey;
+        }
+    }
+    return null;
+}
+
 function goHome() {
     window.location.hash = '';
 }
@@ -59,35 +105,58 @@ function showHomepage() {
         <div class="container">
             <header>
                 <h1>Games Hub</h1>
-                <p>Choose your game</p>
+                <p>Choose your category</p>
             </header>
             
             <main>
                 <div class="games-grid">
-                    <div class="game-card" onclick="navigateToGame('snake')">
-                        <h2>Snake</h2>
-                        <p>Classic snake game</p>
+                    <div class="game-card" onclick="navigateToCategory('arcade')">
+                        <h2>Arcade Games</h2>
+                        <p>Classic action games</p>
                     </div>
                     
-                    <div class="game-card" onclick="navigateToGame('tetris')">
-                        <h2>Tetris</h2>
-                        <p>Block puzzle game</p>
+                    <div class="game-card" onclick="navigateToCategory('puzzle')">
+                        <h2>Puzzle Games</h2>
+                        <p>Brain teasing challenges</p>
                     </div>
-                    
-                    <div class="game-card" onclick="navigateToGame('pong')">
-                        <h2>Pong</h2>
-                        <p>Retro paddle game</p>
-                    </div>
-                    
-                    <div class="game-card" onclick="navigateToGame('breakout')">
-                        <h2>Breakout</h2>
-                        <p>Brick breaking game</p>
-                    </div>
-                    
-                    <div class="game-card" onclick="navigateToGame('memory')">
-                        <h2>Memory</h2>
-                        <p>Card matching game</p>
-                    </div>
+                </div>
+            </main>
+            
+            <footer>
+                <p>&copy; 2024 Games Hub</p>
+            </footer>
+        </div>
+    `;
+}
+
+function showCategory(categoryName) {
+    const category = gameCategories[categoryName];
+    
+    if (!category) {
+        // Category not found, redirect to homepage
+        window.location.hash = '';
+        return;
+    }
+    
+    const gameCards = category.games.map(game => `
+        <div class="game-card" onclick="navigateToGame('${game.id}')">
+            <h2>${game.name}</h2>
+            <p>${game.description}</p>
+        </div>
+    `).join('');
+    
+    document.body.innerHTML = `
+        <div class="container">
+            <header>
+                <h1>${category.name}</h1>
+                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
+                    Back to Home
+                </button>
+            </header>
+            
+            <main>
+                <div class="games-grid">
+                    ${gameCards}
                 </div>
             </main>
             
@@ -104,9 +173,14 @@ function loadSnakeGame() {
         <div class="container">
             <header>
                 <h1>Snake</h1>
-                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
-                    Back to Home
-                </button>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
+                        Back to Home
+                    </button>
+                    <button onclick="navigateToCategory('arcade')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Arcade
+                    </button>
+                </div>
             </header>
             <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
                 <div style="margin-bottom: 20px;">
@@ -313,9 +387,14 @@ function loadPongGame() {
         <div class="container">
             <header>
                 <h1>Pong</h1>
-                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
-                    Back to Home
-                </button>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
+                        Back to Home
+                    </button>
+                    <button onclick="navigateToCategory('arcade')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Arcade
+                    </button>
+                </div>
             </header>
             <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
                 <div style="margin-bottom: 20px; display: flex; justify-content: space-between; width: 500px;">
@@ -588,9 +667,14 @@ function loadBreakoutGame() {
         <div class="container">
             <header>
                 <h1>Breakout</h1>
-                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
-                    Back to Home
-                </button>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
+                        Back to Home
+                    </button>
+                    <button onclick="navigateToCategory('arcade')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Arcade
+                    </button>
+                </div>
             </header>
             <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
                 <div style="margin-bottom: 20px; display: flex; justify-content: space-between; width: 600px;">
