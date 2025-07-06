@@ -25,6 +25,8 @@ function handleRoute() {
 function loadGame(gameName) {
     if (gameName === 'snake') {
         loadSnakeGame();
+    } else if (gameName === 'pong') {
+        loadPongGame();
     } else {
         // Show placeholder for other games
         document.body.innerHTML = `
@@ -301,6 +303,281 @@ function restartSnake() {
     initSnakeGame();
     document.getElementById('score').textContent = '0';
     document.getElementById('gameStatus').textContent = 'Use arrow keys to play';
+}
+
+// Pong Game Implementation
+function loadPongGame() {
+    document.body.innerHTML = `
+        <div class="container">
+            <header>
+                <h1>Pong</h1>
+                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
+                    Back to Home
+                </button>
+            </header>
+            <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
+                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; width: 500px;">
+                    <div style="text-align: center;">
+                        <span style="font-size: 1.5rem; font-weight: bold;">Player: <span id="playerScore">0</span></span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 1.2rem;" id="pongStatus">Press W/S to move. First to 5 wins!</span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 1.5rem; font-weight: bold;">AI: <span id="aiScore">0</span></span>
+                    </div>
+                </div>
+                <canvas id="pongCanvas" width="500" height="300" style="border: 2px solid black; background: white;"></canvas>
+                <div style="margin-top: 20px;">
+                    <button id="restartPongBtn" onclick="restartPong()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Restart Game
+                    </button>
+                </div>
+                <div style="margin-top: 10px; text-align: center;">
+                    <p style="font-size: 0.9rem;">Controls: W/S keys to move paddle up/down</p>
+                </div>
+            </main>
+        </div>
+    `;
+    
+    initPongGame();
+}
+
+let pongGame, pongRunning;
+
+function initPongGame() {
+    const canvas = document.getElementById('pongCanvas');
+    const ctx = canvas.getContext('2d');
+    const playerScoreElement = document.getElementById('playerScore');
+    const aiScoreElement = document.getElementById('aiScore');
+    const statusElement = document.getElementById('pongStatus');
+    
+    const CANVAS_WIDTH = 500;
+    const CANVAS_HEIGHT = 300;
+    const PADDLE_WIDTH = 10;
+    const PADDLE_HEIGHT = 60;
+    const BALL_SIZE = 8;
+    
+    // Game objects
+    class Paddle {
+        constructor(x, y, isPlayer = false) {
+            this.x = x;
+            this.y = y;
+            this.width = PADDLE_WIDTH;
+            this.height = PADDLE_HEIGHT;
+            this.speed = 5;
+            this.isPlayer = isPlayer;
+        }
+        
+        update() {
+            // AI paddle logic
+            if (!this.isPlayer) {
+                const ballCenter = pongGame.ball.y + BALL_SIZE / 2;
+                const paddleCenter = this.y + this.height / 2;
+                
+                if (ballCenter < paddleCenter - 10) {
+                    this.y -= this.speed * 0.7; // AI is slightly slower
+                } else if (ballCenter > paddleCenter + 10) {
+                    this.y += this.speed * 0.7;
+                }
+            }
+            
+            // Keep paddle within bounds
+            if (this.y < 0) this.y = 0;
+            if (this.y > CANVAS_HEIGHT - this.height) {
+                this.y = CANVAS_HEIGHT - this.height;
+            }
+        }
+        
+        draw() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+        
+        moveUp() {
+            if (this.isPlayer) {
+                this.y -= this.speed;
+            }
+        }
+        
+        moveDown() {
+            if (this.isPlayer) {
+                this.y += this.speed;
+            }
+        }
+    }
+    
+    class Ball {
+        constructor() {
+            this.reset();
+        }
+        
+        reset() {
+            this.x = CANVAS_WIDTH / 2;
+            this.y = CANVAS_HEIGHT / 2;
+            this.speedX = Math.random() > 0.5 ? 3 : -3;
+            this.speedY = (Math.random() - 0.5) * 4;
+            this.size = BALL_SIZE;
+        }
+        
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            
+            // Ball collision with top and bottom walls
+            if (this.y <= 0 || this.y >= CANVAS_HEIGHT - this.size) {
+                this.speedY = -this.speedY;
+            }
+            
+            // Ball collision with paddles
+            if (this.x <= pongGame.playerPaddle.x + pongGame.playerPaddle.width &&
+                this.x >= pongGame.playerPaddle.x &&
+                this.y <= pongGame.playerPaddle.y + pongGame.playerPaddle.height &&
+                this.y >= pongGame.playerPaddle.y) {
+                this.speedX = -this.speedX;
+                this.speedX *= 1.05; // Slight speed increase
+                // Add angle based on where ball hits paddle
+                const paddleCenter = pongGame.playerPaddle.y + pongGame.playerPaddle.height / 2;
+                this.speedY += (this.y - paddleCenter) * 0.1;
+            }
+            
+            if (this.x >= pongGame.aiPaddle.x - this.size &&
+                this.x <= pongGame.aiPaddle.x + pongGame.aiPaddle.width &&
+                this.y <= pongGame.aiPaddle.y + pongGame.aiPaddle.height &&
+                this.y >= pongGame.aiPaddle.y) {
+                this.speedX = -this.speedX;
+                this.speedX *= 1.05; // Slight speed increase
+                // Add angle based on where ball hits paddle
+                const paddleCenter = pongGame.aiPaddle.y + pongGame.aiPaddle.height / 2;
+                this.speedY += (this.y - paddleCenter) * 0.1;
+            }
+            
+            // Ball goes off screen - scoring
+            if (this.x < 0) {
+                pongGame.aiScore++;
+                aiScoreElement.textContent = pongGame.aiScore;
+                this.reset();
+                pongGame.checkGameOver();
+            } else if (this.x > CANVAS_WIDTH) {
+                pongGame.playerScore++;
+                playerScoreElement.textContent = pongGame.playerScore;
+                this.reset();
+                pongGame.checkGameOver();
+            }
+        }
+        
+        draw() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+        }
+    }
+    
+    class PongGameClass {
+        constructor() {
+            this.playerScore = 0;
+            this.aiScore = 0;
+            this.gameOver = false;
+            this.winner = null;
+            
+            // Create paddles
+            this.playerPaddle = new Paddle(20, CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2, true);
+            this.aiPaddle = new Paddle(CANVAS_WIDTH - 30, CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2, false);
+            
+            // Create ball
+            this.ball = new Ball();
+            
+            // Input handling
+            this.keys = {};
+            this.setupInput();
+        }
+        
+        setupInput() {
+            document.addEventListener('keydown', (e) => {
+                this.keys[e.key.toLowerCase()] = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                this.keys[e.key.toLowerCase()] = false;
+                e.preventDefault();
+            });
+        }
+        
+        update() {
+            if (this.gameOver) return;
+            
+            // Handle input
+            if (this.keys['w']) {
+                this.playerPaddle.moveUp();
+            }
+            if (this.keys['s']) {
+                this.playerPaddle.moveDown();
+            }
+            
+            // Update game objects
+            this.playerPaddle.update();
+            this.aiPaddle.update();
+            this.ball.update();
+        }
+        
+        draw() {
+            // Clear canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            // Draw center line
+            ctx.strokeStyle = 'black';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(CANVAS_WIDTH / 2, 0);
+            ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw game objects
+            this.playerPaddle.draw();
+            this.aiPaddle.draw();
+            this.ball.draw();
+        }
+        
+        checkGameOver() {
+            if (this.playerScore >= 5) {
+                this.gameOver = true;
+                this.winner = 'Player';
+                statusElement.textContent = 'You Win! Press Restart to play again';
+                pongRunning = false;
+            } else if (this.aiScore >= 5) {
+                this.gameOver = true;
+                this.winner = 'AI';
+                statusElement.textContent = 'AI Wins! Press Restart to play again';
+                pongRunning = false;
+            }
+        }
+    }
+    
+    // Initialize game
+    pongGame = new PongGameClass();
+    pongRunning = true;
+    
+    // Game loop
+    function gameLoop() {
+        pongGame.update();
+        pongGame.draw();
+        
+        if (pongRunning) {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+    
+    // Start game
+    gameLoop();
+}
+
+function restartPong() {
+    initPongGame();
+    document.getElementById('playerScore').textContent = '0';
+    document.getElementById('aiScore').textContent = '0';
+    document.getElementById('pongStatus').textContent = 'Press W/S to move. First to 5 wins!';
 }
 
 // Initialize routing when page loads
