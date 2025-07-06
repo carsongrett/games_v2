@@ -1,6 +1,6 @@
 // Games list
 const games = [
-    { id: "snake", name: "Snake", description: "Classic snake game" },
+    { id: "nfl-player-guess", name: "Guess the NFL Player", description: "Guess the mystery NFL player" },
     { id: "pong", name: "Pong", description: "Retro paddle game" },
     { id: "breakout", name: "Breakout", description: "Brick breaking game" },
     { id: "quiz", name: "General Quiz", description: "Test your knowledge" },
