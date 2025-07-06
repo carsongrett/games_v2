@@ -8,11 +8,11 @@ const gameCategories = {
             { id: "breakout", name: "Breakout", description: "Brick breaking game" }
         ]
     },
-    puzzle: {
-        name: "Puzzle Games",
+    trivia: {
+        name: "Trivia Games",
         games: [
-            { id: "tetris", name: "Tetris", description: "Block puzzle game" },
-            { id: "memory", name: "Memory", description: "Card matching game" }
+            { id: "quiz", name: "General Quiz", description: "Test your knowledge" },
+            { id: "math", name: "Math Trivia", description: "Numbers and equations" }
         ]
     }
 };
@@ -56,6 +56,10 @@ function loadGame(gameName) {
         loadPongGame();
     } else if (gameName === 'breakout') {
         loadBreakoutGame();
+    } else if (gameName === 'quiz') {
+        loadQuizGame();
+    } else if (gameName === 'math') {
+        loadMathGame();
     } else {
         // Show placeholder for other games
         const gameCategory = findGameCategory(gameName);
@@ -115,8 +119,8 @@ function showHomepage() {
                         <p>Classic action games</p>
                     </div>
                     
-                    <div class="game-card" onclick="navigateToCategory('puzzle')">
-                        <h2>Puzzle Games</h2>
+                    <div class="game-card" onclick="navigateToCategory('trivia')">
+                        <h2>Trivia Games</h2>
                         <p>Brain teasing challenges</p>
                     </div>
                 </div>
@@ -958,6 +962,294 @@ function restartBreakout() {
     document.getElementById('breakoutScore').textContent = '0';
     document.getElementById('breakoutLives').textContent = '3';
     document.getElementById('breakoutStatus').textContent = 'Use arrow keys or A/D to move paddle';
+}
+
+// General Quiz Game Implementation
+function loadQuizGame() {
+    document.body.innerHTML = `
+        <div class="container">
+            <header>
+                <h1>General Quiz</h1>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
+                        Back to Home
+                    </button>
+                    <button onclick="navigateToCategory('trivia')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Trivia Games
+                    </button>
+                </div>
+            </header>
+            <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
+                <div style="margin-bottom: 20px;">
+                    <span style="font-size: 1.5rem; font-weight: bold;">Score: <span id="quizScore">0</span></span>
+                    <span style="margin-left: 40px; font-size: 1.2rem;">Question <span id="questionNumber">1</span> of 10</span>
+                </div>
+                <div id="quizContainer" style="max-width: 600px; width: 100%; border: 2px solid black; padding: 30px; background: white; text-align: center;">
+                    <div id="questionText" style="font-size: 1.3rem; margin-bottom: 30px; font-weight: bold;">
+                        Loading question...
+                    </div>
+                    <div id="answersContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <!-- Answers will be loaded here -->
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button id="restartQuizBtn" onclick="restartQuiz()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Restart Quiz
+                    </button>
+                </div>
+            </main>
+        </div>
+    `;
+    
+    initQuizGame();
+}
+
+// Math Trivia Game Implementation
+function loadMathGame() {
+    document.body.innerHTML = `
+        <div class="container">
+            <header>
+                <h1>Math Trivia</h1>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
+                        Back to Home
+                    </button>
+                    <button onclick="navigateToCategory('trivia')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Trivia Games
+                    </button>
+                </div>
+            </header>
+            <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
+                <div style="margin-bottom: 20px;">
+                    <span style="font-size: 1.5rem; font-weight: bold;">Score: <span id="mathScore">0</span></span>
+                    <span style="margin-left: 40px; font-size: 1.2rem;">Question <span id="mathQuestionNumber">1</span> of 10</span>
+                </div>
+                <div id="mathContainer" style="max-width: 600px; width: 100%; border: 2px solid black; padding: 30px; background: white; text-align: center;">
+                    <div id="mathQuestionText" style="font-size: 1.3rem; margin-bottom: 30px; font-weight: bold;">
+                        Loading question...
+                    </div>
+                    <div id="mathAnswersContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <!-- Answers will be loaded here -->
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button id="restartMathBtn" onclick="restartMath()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Restart Quiz
+                    </button>
+                </div>
+            </main>
+        </div>
+    `;
+    
+    initMathGame();
+}
+
+// Quiz Game Logic
+let quizGame;
+
+function initQuizGame() {
+    const questions = [
+        { question: "What is the capital of France?", answers: ["London", "Berlin", "Paris", "Madrid"], correct: 2 },
+        { question: "Which planet is closest to the sun?", answers: ["Venus", "Mercury", "Earth", "Mars"], correct: 1 },
+        { question: "What year did World War II end?", answers: ["1944", "1945", "1946", "1947"], correct: 1 },
+        { question: "What is the largest mammal in the world?", answers: ["Elephant", "Blue Whale", "Giraffe", "Hippo"], correct: 1 },
+        { question: "Who painted the Mona Lisa?", answers: ["Van Gogh", "Picasso", "Leonardo da Vinci", "Monet"], correct: 2 },
+        { question: "What is the chemical symbol for gold?", answers: ["Go", "Gd", "Au", "Ag"], correct: 2 },
+        { question: "Which country has the most natural lakes?", answers: ["Russia", "Canada", "USA", "Finland"], correct: 1 },
+        { question: "What is the hardest natural substance on Earth?", answers: ["Gold", "Iron", "Diamond", "Platinum"], correct: 2 },
+        { question: "In which year did the Berlin Wall fall?", answers: ["1987", "1988", "1989", "1990"], correct: 2 },
+        { question: "What is the smallest country in the world?", answers: ["Monaco", "Vatican City", "San Marino", "Liechtenstein"], correct: 1 }
+    ];
+    
+    quizGame = {
+        questions: questions,
+        currentQuestion: 0,
+        score: 0,
+        gameOver: false
+    };
+    
+    showQuestion();
+}
+
+function showQuestion() {
+    const question = quizGame.questions[quizGame.currentQuestion];
+    document.getElementById('questionText').textContent = question.question;
+    document.getElementById('questionNumber').textContent = quizGame.currentQuestion + 1;
+    
+    const answersContainer = document.getElementById('answersContainer');
+    answersContainer.innerHTML = '';
+    
+    question.answers.forEach((answer, index) => {
+        const button = document.createElement('button');
+        button.textContent = answer;
+        button.style.cssText = 'padding: 15px; background: white; border: 2px solid black; cursor: pointer; font-size: 1rem;';
+        button.onclick = () => selectAnswer(index);
+        answersContainer.appendChild(button);
+    });
+}
+
+function selectAnswer(selectedIndex) {
+    const question = quizGame.questions[quizGame.currentQuestion];
+    const buttons = document.querySelectorAll('#answersContainer button');
+    
+    // Show correct/incorrect answers
+    buttons.forEach((button, index) => {
+        if (index === question.correct) {
+            button.style.backgroundColor = '#90EE90';
+        } else if (index === selectedIndex && selectedIndex !== question.correct) {
+            button.style.backgroundColor = '#FFB6C1';
+        }
+        button.disabled = true;
+    });
+    
+    // Update score
+    if (selectedIndex === question.correct) {
+        quizGame.score++;
+        document.getElementById('quizScore').textContent = quizGame.score;
+    }
+    
+    // Move to next question after delay
+    setTimeout(() => {
+        quizGame.currentQuestion++;
+        if (quizGame.currentQuestion >= quizGame.questions.length) {
+            endQuiz();
+        } else {
+            showQuestion();
+        }
+    }, 1500);
+}
+
+function endQuiz() {
+    document.getElementById('quizContainer').innerHTML = `
+        <div style="text-align: center;">
+            <h2>Quiz Complete!</h2>
+            <p style="font-size: 1.5rem; margin: 20px 0;">Final Score: ${quizGame.score}/10</p>
+            <p style="font-size: 1.2rem;">${quizGame.score >= 7 ? 'Excellent!' : quizGame.score >= 5 ? 'Good job!' : 'Keep trying!'}</p>
+        </div>
+    `;
+}
+
+function restartQuiz() {
+    initQuizGame();
+}
+
+// Math Game Logic
+let mathGame;
+
+function initMathGame() {
+    mathGame = {
+        questions: [],
+        currentQuestion: 0,
+        score: 0,
+        gameOver: false
+    };
+    
+    // Generate 10 random math questions
+    for (let i = 0; i < 10; i++) {
+        mathGame.questions.push(generateMathQuestion());
+    }
+    
+    showMathQuestion();
+}
+
+function generateMathQuestion() {
+    const operations = ['+', '-', '*'];
+    const operation = operations[Math.floor(Math.random() * operations.length)];
+    let num1, num2, answer;
+    
+    if (operation === '+') {
+        num1 = Math.floor(Math.random() * 50) + 1;
+        num2 = Math.floor(Math.random() * 50) + 1;
+        answer = num1 + num2;
+    } else if (operation === '-') {
+        num1 = Math.floor(Math.random() * 50) + 20;
+        num2 = Math.floor(Math.random() * 20) + 1;
+        answer = num1 - num2;
+    } else { // multiplication
+        num1 = Math.floor(Math.random() * 12) + 1;
+        num2 = Math.floor(Math.random() * 12) + 1;
+        answer = num1 * num2;
+    }
+    
+    // Generate wrong answers
+    const wrongAnswers = [];
+    while (wrongAnswers.length < 3) {
+        const wrong = answer + Math.floor(Math.random() * 20) - 10;
+        if (wrong !== answer && wrong > 0 && !wrongAnswers.includes(wrong)) {
+            wrongAnswers.push(wrong);
+        }
+    }
+    
+    const allAnswers = [answer, ...wrongAnswers];
+    const shuffled = allAnswers.sort(() => Math.random() - 0.5);
+    
+    return {
+        question: `What is ${num1} ${operation} ${num2}?`,
+        answers: shuffled,
+        correct: shuffled.indexOf(answer)
+    };
+}
+
+function showMathQuestion() {
+    const question = mathGame.questions[mathGame.currentQuestion];
+    document.getElementById('mathQuestionText').textContent = question.question;
+    document.getElementById('mathQuestionNumber').textContent = mathGame.currentQuestion + 1;
+    
+    const answersContainer = document.getElementById('mathAnswersContainer');
+    answersContainer.innerHTML = '';
+    
+    question.answers.forEach((answer, index) => {
+        const button = document.createElement('button');
+        button.textContent = answer;
+        button.style.cssText = 'padding: 15px; background: white; border: 2px solid black; cursor: pointer; font-size: 1rem;';
+        button.onclick = () => selectMathAnswer(index);
+        answersContainer.appendChild(button);
+    });
+}
+
+function selectMathAnswer(selectedIndex) {
+    const question = mathGame.questions[mathGame.currentQuestion];
+    const buttons = document.querySelectorAll('#mathAnswersContainer button');
+    
+    // Show correct/incorrect answers
+    buttons.forEach((button, index) => {
+        if (index === question.correct) {
+            button.style.backgroundColor = '#90EE90';
+        } else if (index === selectedIndex && selectedIndex !== question.correct) {
+            button.style.backgroundColor = '#FFB6C1';
+        }
+        button.disabled = true;
+    });
+    
+    // Update score
+    if (selectedIndex === question.correct) {
+        mathGame.score++;
+        document.getElementById('mathScore').textContent = mathGame.score;
+    }
+    
+    // Move to next question after delay
+    setTimeout(() => {
+        mathGame.currentQuestion++;
+        if (mathGame.currentQuestion >= mathGame.questions.length) {
+            endMathGame();
+        } else {
+            showMathQuestion();
+        }
+    }, 1500);
+}
+
+function endMathGame() {
+    document.getElementById('mathContainer').innerHTML = `
+        <div style="text-align: center;">
+            <h2>Math Quiz Complete!</h2>
+            <p style="font-size: 1.5rem; margin: 20px 0;">Final Score: ${mathGame.score}/10</p>
+            <p style="font-size: 1.2rem;">${mathGame.score >= 8 ? 'Math genius!' : mathGame.score >= 6 ? 'Good job!' : 'Keep practicing!'}</p>
+        </div>
+    `;
+}
+
+function restartMath() {
+    initMathGame();
 }
 
 // Initialize routing when page loads
