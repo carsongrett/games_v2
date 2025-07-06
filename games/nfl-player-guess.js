@@ -55,20 +55,50 @@
                             <div>TDs</div>
                         </div>
                         <div id="mobileHeaders" style="display: none; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 5px;">
-                            <div>Player</div>
-                            <div>Conf.</div>
-                            <div>Tm.</div>
-                            <div>Pos.</div>
-                            <div>RecYds.</div>
-                            <div>RushYds.</div>
-                            <div>TDs</div>
+                            <div style="text-align: center; min-width: 80px;">Player</div>
+                            <div style="text-align: center; min-width: 50px;">Conf.</div>
+                            <div style="text-align: center; min-width: 40px;">Tm.</div>
+                            <div style="text-align: center; min-width: 40px;">Pos.</div>
+                            <div style="text-align: center; min-width: 50px; display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
+                                <div>Rec</div>
+                                <div>Yds.</div>
+                            </div>
+                            <div style="text-align: center; min-width: 50px; display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
+                                <div>Rush</div>
+                                <div>Yds.</div>
+                            </div>
+                            <div style="text-align: center; min-width: 40px;">TDs</div>
                         </div>
                         <style>
                             @media (max-width: 600px) {
                                 #desktopHeaders { display: none !important; }
                                 #mobileHeaders { display: grid !important; }
-                            }
-                        </style>
+                                #mobileHeaders > div { 
+                                    min-height: 50px; 
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center;
+                                }
+                                                                 #mobileHeaders > div:nth-child(5),
+                                 #mobileHeaders > div:nth-child(6) {
+                                     flex-direction: column !important;
+                                 }
+                                 #guessesList > div {
+                                     grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr !important;
+                                 }
+                                 #guessesList > div > div {
+                                     min-width: 40px !important;
+                                     text-align: center !important;
+                                     padding: 8px 4px !important;
+                                     overflow: hidden !important;
+                                     text-overflow: ellipsis !important;
+                                 }
+                                 #guessesList > div > div:first-child {
+                                     min-width: 80px !important;
+                                     text-align: left !important;
+                                 }
+                             }
+                         </style>
                     </div>
                     <div id="guessesList"></div>
                 </div>
@@ -390,7 +420,7 @@
     function createCell(content, backgroundColor) {
         const cell = document.createElement('div');
         cell.textContent = content;
-        cell.style.cssText = `background: ${backgroundColor}; padding: 8px; text-align: center; border-radius: 3px; font-weight: bold;`;
+        cell.style.cssText = `background: ${backgroundColor}; padding: 8px; text-align: center; border-radius: 3px; font-weight: bold; min-width: 40px; overflow: hidden; text-overflow: ellipsis;`;
         return cell;
     }
     
