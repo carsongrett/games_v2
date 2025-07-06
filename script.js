@@ -814,28 +814,28 @@ function initBreakoutGame() {
             });
         }
         
-        update() {
-            if (this.gameOver || this.gameWon) return;
-            
-            // Handle input
-            if (this.keys['arrowleft'] || this.keys['a']) {
-                this.paddle.moveLeft();
-            }
-            if (this.keys['arrowright'] || this.keys['d']) {
-                this.paddle.moveRight();
-            }
-            
-            // Update game objects
-            this.paddle.update();
-            this.ball.update();
-            
-            // Check win condition
-            if (this.bricks.length === 0) {
-                this.gameWon = true;
-                statusElement.textContent = 'You Win! Press Restart to play again';
-                breakoutRunning = false;
-            }
-        }
+                 update() {
+             if (this.gameOver || this.gameWon) return;
+             
+             // Handle input - support both arrow keys and A/D keys
+             if (this.keys['arrowleft'] || this.keys['a']) {
+                 this.paddle.moveLeft();
+             }
+             if (this.keys['arrowright'] || this.keys['d']) {
+                 this.paddle.moveRight();
+             }
+             
+             // Update game objects
+             this.paddle.update();
+             this.ball.update();
+             
+             // Check win condition
+             if (this.bricks.length === 0) {
+                 this.gameWon = true;
+                 statusElement.textContent = 'You Win! Press Restart to play again';
+                 breakoutRunning = false;
+             }
+         }
         
         draw() {
             // Clear canvas
