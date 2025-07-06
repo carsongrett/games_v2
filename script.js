@@ -1,21 +1,24 @@
 // Navigation function for games
 function navigateToGame(gameName) {
-    // Change URL to /home/gamename format
-    window.location.href = `/home/${gameName}`;
+    // Change URL to #/home/gamename format (hash routing)
+    window.location.hash = `/home/${gameName}`;
 }
 
 // Handle back navigation and URL routing
-window.addEventListener('popstate', function(event) {
+window.addEventListener('hashchange', function(event) {
     handleRoute();
 });
 
 function handleRoute() {
-    const path = window.location.pathname;
+    const hash = window.location.hash;
     
     // Check if we're on a game page
-    if (path.startsWith('/home/') && path !== '/home/') {
-        const gameName = path.split('/home/')[1];
+    if (hash.startsWith('#/home/') && hash !== '#/home/') {
+        const gameName = hash.split('#/home/')[1];
         loadGame(gameName);
+    } else if (hash === '' || hash === '#' || hash === '#/') {
+        // Show homepage
+        showHomepage();
     }
 }
 
@@ -44,7 +47,51 @@ function loadGame(gameName) {
 }
 
 function goHome() {
-    window.location.href = '/';
+    window.location.hash = '';
+}
+
+function showHomepage() {
+    document.body.innerHTML = `
+        <div class="container">
+            <header>
+                <h1>Games Hub</h1>
+                <p>Choose your game</p>
+            </header>
+            
+            <main>
+                <div class="games-grid">
+                    <div class="game-card" onclick="navigateToGame('snake')">
+                        <h2>Snake</h2>
+                        <p>Classic snake game</p>
+                    </div>
+                    
+                    <div class="game-card" onclick="navigateToGame('tetris')">
+                        <h2>Tetris</h2>
+                        <p>Block puzzle game</p>
+                    </div>
+                    
+                    <div class="game-card" onclick="navigateToGame('pong')">
+                        <h2>Pong</h2>
+                        <p>Retro paddle game</p>
+                    </div>
+                    
+                    <div class="game-card" onclick="navigateToGame('breakout')">
+                        <h2>Breakout</h2>
+                        <p>Brick breaking game</p>
+                    </div>
+                    
+                    <div class="game-card" onclick="navigateToGame('memory')">
+                        <h2>Memory</h2>
+                        <p>Card matching game</p>
+                    </div>
+                </div>
+            </main>
+            
+            <footer>
+                <p>&copy; 2024 Games Hub</p>
+            </footer>
+        </div>
+    `;
 }
 
 // Snake Game Implementation

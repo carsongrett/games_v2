@@ -49,16 +49,13 @@
     
     <script src="script.js"></script>
     <script>
-        // Handle GitHub Pages routing for direct URL access
+        // Redirect to hash-based routing for GitHub Pages compatibility
         (function() {
-            // Check if we're on a game page path
             const path = window.location.pathname;
             if (path.startsWith('/home/') && path !== '/home/') {
                 const gameName = path.split('/home/')[1];
-                // Replace the URL state to avoid showing 404 in browser history
-                window.history.replaceState({}, '', path);
-                // Load the game
-                loadGame(gameName);
+                // Redirect to hash-based URL
+                window.location.replace(`/#/home/${gameName}`);
             }
         })();
     </script>
