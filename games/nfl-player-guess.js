@@ -16,7 +16,7 @@
         document.getElementById('game-container').innerHTML = `
             <div style="text-align: center; max-width: 1000px; margin: 0 auto;">
                 <h2>Guess the NFL Player</h2>
-                <p style="margin-bottom: 20px; color: #666;">Guess the mystery NFL player in 8 tries!</p>
+                <p style="margin-bottom: 20px; color: #666;">Guess the mystery NFL player in 8 tries! Data is from 2024 season.</p>
                 
                 <div style="margin-bottom: 20px;">
                     <div style="margin-bottom: 10px; position: relative;">
