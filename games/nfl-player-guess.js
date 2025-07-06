@@ -14,7 +14,7 @@
     
     function showNFLPlayerGame() {
         document.getElementById('game-container').innerHTML = `
-            <div style="text-align: center; max-width: 1000px; margin: 0 auto;">
+            <div style="text-align: center; max-width: 1000px; margin: 0 auto;" id="gameContainer">
                 <h2>Guess the NFL Player</h2>
                 <p style="margin-bottom: 20px; color: #666;">Guess the mystery NFL player in 8 tries! Data is from 2024 season.</p>
                 
@@ -54,23 +54,28 @@
                             <div>Rush Yds</div>
                             <div>TDs</div>
                         </div>
-                        <div id="mobileHeaders" style="display: none; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 5px;">
-                            <div style="text-align: center; min-width: 80px;">Player</div>
+                        <div id="mobileHeaders" style="display: none; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 2px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 8px; border-radius: 5px;">
+                            <div style="text-align: center; min-width: 70px;">Player</div>
                             <div style="text-align: center; min-width: 50px;">Conf.</div>
-                            <div style="text-align: center; min-width: 40px;">Tm.</div>
-                            <div style="text-align: center; min-width: 40px;">Pos.</div>
-                            <div style="text-align: center; min-width: 50px; display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
+                            <div style="text-align: center; min-width: 45px;">Tm.</div>
+                            <div style="text-align: center; min-width: 45px;">Pos.</div>
+                            <div style="text-align: center; min-width: 55px; display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
                                 <div>Rec</div>
                                 <div>Yds.</div>
                             </div>
-                            <div style="text-align: center; min-width: 50px; display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
+                            <div style="text-align: center; min-width: 55px; display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
                                 <div>Rush</div>
                                 <div>Yds.</div>
                             </div>
-                            <div style="text-align: center; min-width: 40px;">TDs</div>
+                            <div style="text-align: center; min-width: 45px;">TDs</div>
                         </div>
-                        <style>
+                                                <style>
                             @media (max-width: 600px) {
+                                #gameContainer {
+                                    max-width: none !important;
+                                    margin: 0 !important;
+                                    padding: 0 10px !important;
+                                }
                                 #desktopHeaders { display: none !important; }
                                 #mobileHeaders { display: grid !important; }
                                 #mobileHeaders > div { 
@@ -79,26 +84,32 @@
                                     align-items: center; 
                                     justify-content: center;
                                 }
-                                                                 #mobileHeaders > div:nth-child(5),
-                                 #mobileHeaders > div:nth-child(6) {
-                                     flex-direction: column !important;
-                                 }
-                                 #guessesList > div {
-                                     grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr !important;
-                                 }
-                                 #guessesList > div > div {
-                                     min-width: 40px !important;
-                                     text-align: center !important;
-                                     padding: 8px 4px !important;
-                                     overflow: hidden !important;
-                                     text-overflow: ellipsis !important;
-                                 }
-                                 #guessesList > div > div:first-child {
-                                     min-width: 80px !important;
-                                     text-align: left !important;
-                                 }
-                             }
-                         </style>
+                                #mobileHeaders > div:nth-child(5),
+                                #mobileHeaders > div:nth-child(6) {
+                                    flex-direction: column !important;
+                                }
+                                #guessesList > div {
+                                    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr !important;
+                                    gap: 2px !important;
+                                }
+                                #guessesList > div > div {
+                                    min-width: 45px !important;
+                                    text-align: center !important;
+                                    padding: 6px 2px !important;
+                                    overflow: visible !important;
+                                    text-overflow: clip !important;
+                                    font-size: 14px !important;
+                                }
+                                #guessesList > div > div:first-child {
+                                    min-width: 70px !important;
+                                    text-align: left !important;
+                                }
+                                #guessesList > div > div:nth-child(5),
+                                #guessesList > div > div:nth-child(6) {
+                                    min-width: 55px !important;
+                                }
+                            }
+                        </style>
                     </div>
                     <div id="guessesList"></div>
                 </div>
@@ -420,7 +431,7 @@
     function createCell(content, backgroundColor) {
         const cell = document.createElement('div');
         cell.textContent = content;
-        cell.style.cssText = `background: ${backgroundColor}; padding: 8px; text-align: center; border-radius: 3px; font-weight: bold; min-width: 40px; overflow: hidden; text-overflow: ellipsis;`;
+        cell.style.cssText = `background: ${backgroundColor}; padding: 8px; text-align: center; border-radius: 3px; font-weight: bold; min-width: 45px; overflow: visible; text-overflow: clip;`;
         return cell;
     }
     
