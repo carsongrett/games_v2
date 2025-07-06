@@ -128,14 +128,16 @@
     function populatePlayerDropdown() {
         const select = document.getElementById('playerSelect');
         
-        // Sort players alphabetically
-        const sortedPlayers = [...playersData].sort((a, b) => a.Player.localeCompare(b.Player));
+        // Sort players alphabetically but keep original indices
+        const sortedPlayers = playersData
+            .map((player, originalIndex) => ({ player, originalIndex }))
+            .sort((a, b) => a.player.Player.localeCompare(b.player.Player));
         
         select.innerHTML = '<option value="">Choose a player...</option>';
         
-        sortedPlayers.forEach((player, index) => {
+        sortedPlayers.forEach(({ player, originalIndex }) => {
             const option = document.createElement('option');
-            option.value = index;
+            option.value = originalIndex; // Use original index from playersData
             option.textContent = `${player.Player} (${player.Team} ${player.Position})`;
             select.appendChild(option);
         });
