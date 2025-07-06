@@ -1,7 +1,7 @@
 // Game categories data structure
 const gameCategories = {
-    arcade: {
-        name: "Arcade Games",
+    keyboard: {
+        name: "Keyboard Games",
         games: [
             { id: "snake", name: "Snake", description: "Classic snake game" },
             { id: "pong", name: "Pong", description: "Retro paddle game" },
@@ -110,8 +110,8 @@ function showHomepage() {
             
             <main>
                 <div class="games-grid">
-                    <div class="game-card" onclick="navigateToCategory('arcade')">
-                        <h2>Arcade Games</h2>
+                    <div class="game-card" onclick="navigateToCategory('keyboard')">
+                        <h2>Keyboard Games</h2>
                         <p>Classic action games</p>
                     </div>
                     
@@ -177,8 +177,8 @@ function loadSnakeGame() {
                     <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
                         Back to Home
                     </button>
-                    <button onclick="navigateToCategory('arcade')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
-                        Back to Arcade
+                    <button onclick="navigateToCategory('keyboard')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Keyboard
                     </button>
                 </div>
             </header>
@@ -391,8 +391,8 @@ function loadPongGame() {
                     <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
                         Back to Home
                     </button>
-                    <button onclick="navigateToCategory('arcade')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
-                        Back to Arcade
+                    <button onclick="navigateToCategory('keyboard')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Keyboard
                     </button>
                 </div>
             </header>
@@ -671,8 +671,8 @@ function loadBreakoutGame() {
                     <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px;">
                         Back to Home
                     </button>
-                    <button onclick="navigateToCategory('arcade')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
-                        Back to Arcade
+                    <button onclick="navigateToCategory('keyboard')" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Back to Keyboard
                     </button>
                 </div>
             </header>
