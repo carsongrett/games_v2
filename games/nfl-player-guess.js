@@ -45,7 +45,7 @@
                 <div id="guessesContainer" style="margin-bottom: 20px;">
                     <div id="guessesHeader" style="display: none;">
                         <h3>Your Guesses:</h3>
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                        <div id="desktopHeaders" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 5px;">
                             <div>Player</div>
                             <div>Conference</div>
                             <div>Team</div>
@@ -54,6 +54,21 @@
                             <div>Rush Yds</div>
                             <div>TDs</div>
                         </div>
+                        <div id="mobileHeaders" style="display: none; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                            <div>Player</div>
+                            <div>Conf.</div>
+                            <div>Tm.</div>
+                            <div>Pos.</div>
+                            <div>RecYds.</div>
+                            <div>RushYds.</div>
+                            <div>TDs</div>
+                        </div>
+                        <style>
+                            @media (max-width: 600px) {
+                                #desktopHeaders { display: none !important; }
+                                #mobileHeaders { display: grid !important; }
+                            }
+                        </style>
                     </div>
                     <div id="guessesList"></div>
                 </div>
