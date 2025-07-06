@@ -27,6 +27,8 @@ function loadGame(gameName) {
         loadSnakeGame();
     } else if (gameName === 'pong') {
         loadPongGame();
+    } else if (gameName === 'breakout') {
+        loadBreakoutGame();
     } else {
         // Show placeholder for other games
         document.body.innerHTML = `
@@ -578,6 +580,300 @@ function restartPong() {
     document.getElementById('playerScore').textContent = '0';
     document.getElementById('aiScore').textContent = '0';
     document.getElementById('pongStatus').textContent = 'Press W/S to move. First to 5 wins!';
+}
+
+// Breakout Game Implementation
+function loadBreakoutGame() {
+    document.body.innerHTML = `
+        <div class="container">
+            <header>
+                <h1>Breakout</h1>
+                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
+                    Back to Home
+                </button>
+            </header>
+            <main style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
+                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; width: 600px;">
+                    <div style="text-align: center;">
+                        <span style="font-size: 1.5rem; font-weight: bold;">Score: <span id="breakoutScore">0</span></span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 1.2rem;" id="breakoutStatus">Use arrow keys or A/D to move paddle</span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 1.5rem; font-weight: bold;">Lives: <span id="breakoutLives">3</span></span>
+                    </div>
+                </div>
+                <canvas id="breakoutCanvas" width="600" height="400" style="border: 2px solid black; background: white;"></canvas>
+                <div style="margin-top: 20px;">
+                    <button id="restartBreakoutBtn" onclick="restartBreakout()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+                        Restart Game
+                    </button>
+                </div>
+                <div style="margin-top: 10px; text-align: center;">
+                    <p style="font-size: 0.9rem;">Controls: Arrow Keys or A/D to move paddle</p>
+                </div>
+            </main>
+        </div>
+    `;
+    
+    initBreakoutGame();
+}
+
+let breakoutGame, breakoutRunning;
+
+function initBreakoutGame() {
+    const canvas = document.getElementById('breakoutCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('breakoutScore');
+    const livesElement = document.getElementById('breakoutLives');
+    const statusElement = document.getElementById('breakoutStatus');
+    
+    const CANVAS_WIDTH = 600;
+    const CANVAS_HEIGHT = 400;
+    const PADDLE_WIDTH = 80;
+    const PADDLE_HEIGHT = 10;
+    const BALL_SIZE = 8;
+    const BRICK_WIDTH = 60;
+    const BRICK_HEIGHT = 20;
+    const BRICK_ROWS = 5;
+    const BRICK_COLS = 9;
+    
+    // Paddle class
+    class Paddle {
+        constructor() {
+            this.width = PADDLE_WIDTH;
+            this.height = PADDLE_HEIGHT;
+            this.x = CANVAS_WIDTH / 2 - this.width / 2;
+            this.y = CANVAS_HEIGHT - 30;
+            this.speed = 8;
+        }
+        
+        update() {
+            // Keep paddle within bounds
+            if (this.x < 0) this.x = 0;
+            if (this.x > CANVAS_WIDTH - this.width) {
+                this.x = CANVAS_WIDTH - this.width;
+            }
+        }
+        
+        draw() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+        
+        moveLeft() {
+            this.x -= this.speed;
+        }
+        
+        moveRight() {
+            this.x += this.speed;
+        }
+    }
+    
+    // Ball class
+    class Ball {
+        constructor() {
+            this.reset();
+        }
+        
+        reset() {
+            this.x = CANVAS_WIDTH / 2;
+            this.y = CANVAS_HEIGHT - 60;
+            this.speedX = (Math.random() - 0.5) * 4;
+            this.speedY = -4;
+            this.size = BALL_SIZE;
+        }
+        
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            
+            // Ball collision with walls
+            if (this.x <= 0 || this.x >= CANVAS_WIDTH - this.size) {
+                this.speedX = -this.speedX;
+            }
+            if (this.y <= 0) {
+                this.speedY = -this.speedY;
+            }
+            
+            // Ball collision with paddle
+            if (this.x <= breakoutGame.paddle.x + breakoutGame.paddle.width &&
+                this.x >= breakoutGame.paddle.x &&
+                this.y <= breakoutGame.paddle.y + breakoutGame.paddle.height &&
+                this.y >= breakoutGame.paddle.y) {
+                this.speedY = -this.speedY;
+                // Add angle based on where ball hits paddle
+                const paddleCenter = breakoutGame.paddle.x + breakoutGame.paddle.width / 2;
+                this.speedX += (this.x - paddleCenter) * 0.1;
+                // Limit speed
+                this.speedX = Math.max(-6, Math.min(6, this.speedX));
+            }
+            
+            // Ball collision with bricks
+            for (let i = 0; i < breakoutGame.bricks.length; i++) {
+                const brick = breakoutGame.bricks[i];
+                if (this.x <= brick.x + brick.width &&
+                    this.x >= brick.x &&
+                    this.y <= brick.y + brick.height &&
+                    this.y >= brick.y) {
+                    this.speedY = -this.speedY;
+                    breakoutGame.bricks.splice(i, 1);
+                    breakoutGame.score += 10;
+                    scoreElement.textContent = breakoutGame.score;
+                    break;
+                }
+            }
+            
+            // Ball goes off bottom - lose life
+            if (this.y > CANVAS_HEIGHT) {
+                breakoutGame.lives--;
+                livesElement.textContent = breakoutGame.lives;
+                if (breakoutGame.lives <= 0) {
+                    breakoutGame.gameOver = true;
+                    statusElement.textContent = 'Game Over! Press Restart to play again';
+                    breakoutRunning = false;
+                } else {
+                    this.reset();
+                    statusElement.textContent = 'Life lost! Use arrow keys to move paddle';
+                }
+            }
+        }
+        
+        draw() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+        }
+    }
+    
+    // Brick class
+    class Brick {
+        constructor(x, y, row) {
+            this.x = x;
+            this.y = y;
+            this.width = BRICK_WIDTH;
+            this.height = BRICK_HEIGHT;
+            this.row = row;
+        }
+        
+        draw() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            // Draw brick outline
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+        }
+    }
+    
+    // Game class
+    class BreakoutGameClass {
+        constructor() {
+            this.score = 0;
+            this.lives = 3;
+            this.gameOver = false;
+            this.gameWon = false;
+            
+            // Create paddle
+            this.paddle = new Paddle();
+            
+            // Create ball
+            this.ball = new Ball();
+            
+            // Create bricks
+            this.bricks = [];
+            this.createBricks();
+            
+            // Input handling
+            this.keys = {};
+            this.setupInput();
+        }
+        
+        createBricks() {
+            const offsetX = (CANVAS_WIDTH - (BRICK_COLS * BRICK_WIDTH + (BRICK_COLS - 1) * 5)) / 2;
+            const offsetY = 50;
+            
+            for (let row = 0; row < BRICK_ROWS; row++) {
+                for (let col = 0; col < BRICK_COLS; col++) {
+                    const x = offsetX + col * (BRICK_WIDTH + 5);
+                    const y = offsetY + row * (BRICK_HEIGHT + 5);
+                    this.bricks.push(new Brick(x, y, row));
+                }
+            }
+        }
+        
+        setupInput() {
+            document.addEventListener('keydown', (e) => {
+                this.keys[e.key.toLowerCase()] = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                this.keys[e.key.toLowerCase()] = false;
+                e.preventDefault();
+            });
+        }
+        
+        update() {
+            if (this.gameOver || this.gameWon) return;
+            
+            // Handle input
+            if (this.keys['arrowleft'] || this.keys['a']) {
+                this.paddle.moveLeft();
+            }
+            if (this.keys['arrowright'] || this.keys['d']) {
+                this.paddle.moveRight();
+            }
+            
+            // Update game objects
+            this.paddle.update();
+            this.ball.update();
+            
+            // Check win condition
+            if (this.bricks.length === 0) {
+                this.gameWon = true;
+                statusElement.textContent = 'You Win! Press Restart to play again';
+                breakoutRunning = false;
+            }
+        }
+        
+        draw() {
+            // Clear canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            // Draw game objects
+            this.paddle.draw();
+            this.ball.draw();
+            
+            // Draw bricks
+            this.bricks.forEach(brick => brick.draw());
+        }
+    }
+    
+    // Initialize game
+    breakoutGame = new BreakoutGameClass();
+    breakoutRunning = true;
+    
+    // Game loop
+    function gameLoop() {
+        breakoutGame.update();
+        breakoutGame.draw();
+        
+        if (breakoutRunning) {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+    
+    // Start game
+    gameLoop();
+}
+
+function restartBreakout() {
+    initBreakoutGame();
+    document.getElementById('breakoutScore').textContent = '0';
+    document.getElementById('breakoutLives').textContent = '3';
+    document.getElementById('breakoutStatus').textContent = 'Use arrow keys or A/D to move paddle';
 }
 
 // Initialize routing when page loads
