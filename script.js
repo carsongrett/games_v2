@@ -115,7 +115,7 @@ function showHomepage() {
     document.body.innerHTML = `
         <div class="container">
             <header>
-                <h1>Games Hub</h1>
+                <h1>Games</h1>
                 <p>Choose your game</p>
             </header>
             
@@ -126,7 +126,7 @@ function showHomepage() {
             </main>
             
             <footer>
-                <p>&copy; 2024 Games Hub</p>
+                <p>&copy; 2024 Games</p>
             </footer>
         </div>
     `;
