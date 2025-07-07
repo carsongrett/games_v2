@@ -19,7 +19,7 @@
         document.getElementById('game-container').innerHTML = `
             <div style="text-align: center; max-width: 1000px; margin: 0 auto;" id="gameContainer">
                 <h2>Guess the MLB Player</h2>
-                <p style="margin-bottom: 20px; color: #666;">Guess the mystery MLB player in 8 tries! Data is 2025 season through July 6th.</p>
+                <p style="margin-bottom: 20px; color: #666;">Data is 2025 season through July 6th. Hints available on 5th and 7th guess.</p>
                 
                 <div style="margin-bottom: 20px;">
                     <div style="margin-bottom: 10px; position: relative;">

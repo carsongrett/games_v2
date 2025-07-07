@@ -19,7 +19,7 @@
         document.getElementById('game-container').innerHTML = `
             <div style="text-align: center; max-width: 1000px; margin: 0 auto;" id="gameContainer">
                 <h2>Guess the NFL Player</h2>
-                <p style="margin-bottom: 20px; color: #666;">Guess the mystery NFL player in 8 tries! Data is from 2024 season.</p>
+                <p style="margin-bottom: 20px; color: #666;">Data is from 2024 season. Hints available on 5th and 7th guess.</p>
                 
                 <div style="margin-bottom: 20px;">
                     <div style="margin-bottom: 10px; position: relative;">
@@ -35,18 +35,18 @@
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
-                        <div style="display: flex; gap: 10px;">
-                            <span style="font-weight: bold; color: #666;">Hints:</span>
-                            <button id="teamHintButton" onclick="useTeamHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 14px; border-radius: 4px;">
-                                Team
-                            </button>
-                            <button id="initialHintButton" onclick="useInitialHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 14px; border-radius: 4px;">
-                                Initial
-                            </button>
-                        </div>
                         <button id="guessButton" onclick="makeGuess()" disabled style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: not-allowed; font-size: 16px;">
                             Make Guess
                         </button>
+                        <div style="display: flex; gap: 10px;">
+                            <span style="font-weight: bold; color: #666;">Hints:</span>
+                            <button id="teamHintButton" onclick="useTeamHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 16px; border-radius: 4px;">
+                                Team
+                            </button>
+                            <button id="initialHintButton" onclick="useInitialHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 16px; border-radius: 4px;">
+                                Initial
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -362,7 +362,7 @@
         if (wrongGuesses >= 4 && !teamHintUsed && !gameOver) {
             teamHintButton.disabled = false;
             teamHintButton.style.cursor = 'pointer';
-            teamHintButton.style.background = '#17a2b8';
+            teamHintButton.style.background = '#6bb6ff';
         } else if (teamHintUsed) {
             teamHintButton.style.background = '#6c757d';
             teamHintButton.disabled = true;
@@ -372,7 +372,7 @@
         if (wrongGuesses >= 6 && !initialHintUsed && !gameOver) {
             initialHintButton.disabled = false;
             initialHintButton.style.cursor = 'pointer';
-            initialHintButton.style.background = '#17a2b8';
+            initialHintButton.style.background = '#6bb6ff';
         } else if (initialHintUsed) {
             initialHintButton.style.background = '#6c757d';
             initialHintButton.disabled = true;
