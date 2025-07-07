@@ -14,7 +14,7 @@
     
     function showMLBPlayerGame() {
         document.getElementById('game-container').innerHTML = `
-            <div style="text-align: center; max-width: 1000px; margin: 0 auto;">
+            <div style="text-align: center; max-width: 1000px; margin: 0 auto;" id="gameContainer">
                 <h2>Guess the MLB Player</h2>
                 <p style="margin-bottom: 20px; color: #666;">Guess the mystery MLB player in 8 tries! Data is 2025 season through July 6th.</p>
                 
@@ -55,20 +55,51 @@
                             <div>HR</div>
                             <div>OPS</div>
                         </div>
-                        <div id="mobileHeaders" style="display: none; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 5px;">
-                            <div>Player</div>
-                            <div>Lg.</div>
-                            <div>Tm.</div>
-                            <div>Age</div>
-                            <div>Runs</div>
-                            <div>SB</div>
-                            <div>HR</div>
-                            <div>OPS</div>
+                        <div id="mobileHeaders" style="display: none; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 2px; margin-bottom: 10px; font-weight: bold; background: #f0f0f0; padding: 8px; border-radius: 5px;">
+                            <div style="text-align: center; min-width: 70px;">Player</div>
+                            <div style="text-align: center; min-width: 40px;">Lg.</div>
+                            <div style="text-align: center; min-width: 40px;">Tm.</div>
+                            <div style="text-align: center; min-width: 40px;">Age</div>
+                            <div style="text-align: center; min-width: 45px;">Runs</div>
+                            <div style="text-align: center; min-width: 40px;">SB</div>
+                            <div style="text-align: center; min-width: 40px;">HR</div>
+                            <div style="text-align: center; min-width: 45px;">OPS</div>
                         </div>
                         <style>
                             @media (max-width: 600px) {
+                                #gameContainer {
+                                    max-width: none !important;
+                                    margin: 0 !important;
+                                    padding: 0 10px !important;
+                                }
                                 #desktopHeaders { display: none !important; }
                                 #mobileHeaders { display: grid !important; }
+                                #mobileHeaders > div { 
+                                    min-height: 50px; 
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center;
+                                }
+                                #guessesList > div {
+                                    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr !important;
+                                    gap: 2px !important;
+                                }
+                                #guessesList > div > div {
+                                    min-width: 40px !important;
+                                    text-align: center !important;
+                                    padding: 6px 2px !important;
+                                    overflow: visible !important;
+                                    text-overflow: clip !important;
+                                    font-size: 14px !important;
+                                }
+                                #guessesList > div > div:first-child {
+                                    min-width: 70px !important;
+                                    text-align: left !important;
+                                }
+                                #guessesList > div > div:nth-child(5),
+                                #guessesList > div > div:nth-child(8) {
+                                    min-width: 45px !important;
+                                }
                             }
                         </style>
                     </div>
