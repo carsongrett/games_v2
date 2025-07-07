@@ -6,6 +6,9 @@
     let gameWon = false;
     let gameOver = false;
     const maxGuesses = 8;
+    let wrongGuesses = 0;
+    let teamHintUsed = false;
+    let initialHintUsed = false;
     
     // Initialize the game when this script loads
     window.initializeGame = function() {
@@ -31,9 +34,20 @@
                         <div id="playerDropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #ccc; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; display: none; z-index: 1000;">
                         </div>
                     </div>
-                    <button id="guessButton" onclick="makeGuess()" disabled style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: not-allowed; font-size: 16px; margin-top: 10px;">
-                        Make Guess
-                    </button>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
+                        <div style="display: flex; gap: 10px;">
+                            <span style="font-weight: bold; color: #666;">Hints:</span>
+                            <button id="teamHintButton" onclick="useTeamHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 14px; border-radius: 4px;">
+                                Team
+                            </button>
+                            <button id="initialHintButton" onclick="useInitialHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 14px; border-radius: 4px;">
+                                Initial
+                            </button>
+                        </div>
+                        <button id="guessButton" onclick="makeGuess()" disabled style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: not-allowed; font-size: 16px;">
+                            Make Guess
+                        </button>
+                    </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
@@ -333,6 +347,55 @@
         }
     }
     
+    function updateHintButtons() {
+        const teamHintButton = document.getElementById('teamHintButton');
+        const initialHintButton = document.getElementById('initialHintButton');
+        
+        // Team hint available after 4 wrong guesses
+        if (wrongGuesses >= 4 && !teamHintUsed && !gameOver) {
+            teamHintButton.disabled = false;
+            teamHintButton.style.cursor = 'pointer';
+            teamHintButton.style.background = '#17a2b8';
+        } else if (teamHintUsed) {
+            teamHintButton.style.background = '#6c757d';
+            teamHintButton.disabled = true;
+        }
+        
+        // Initial hint available after 6 wrong guesses
+        if (wrongGuesses >= 6 && !initialHintUsed && !gameOver) {
+            initialHintButton.disabled = false;
+            initialHintButton.style.cursor = 'pointer';
+            initialHintButton.style.background = '#17a2b8';
+        } else if (initialHintUsed) {
+            initialHintButton.style.background = '#6c757d';
+            initialHintButton.disabled = true;
+        }
+    }
+    
+    function useTeamHint() {
+        if (teamHintUsed || wrongGuesses < 4 || gameOver) return;
+        
+        teamHintUsed = true;
+        const teamHintButton = document.getElementById('teamHintButton');
+        teamHintButton.textContent = targetPlayer.Team;
+        teamHintButton.style.background = '#6c757d';
+        teamHintButton.disabled = true;
+        teamHintButton.style.cursor = 'not-allowed';
+    }
+    
+    function useInitialHint() {
+        if (initialHintUsed || wrongGuesses < 6 || gameOver) return;
+        
+        initialHintUsed = true;
+        const initialHintButton = document.getElementById('initialHintButton');
+        const firstName = targetPlayer.Player.split(' ')[0];
+        const initial = firstName.charAt(0).toUpperCase();
+        initialHintButton.textContent = initial;
+        initialHintButton.style.background = '#6c757d';
+        initialHintButton.disabled = true;
+        initialHintButton.style.cursor = 'not-allowed';
+    }
+    
     function selectRandomTarget() {
         const randomIndex = Math.floor(Math.random() * playersData.length);
         targetPlayer = playersData[randomIndex];
@@ -358,12 +421,16 @@
             gameWon = true;
             gameOver = true;
             showGameResult(true);
-        } else if (guesses.length >= maxGuesses) {
-            gameOver = true;
-            showGameResult(false);
+        } else {
+            wrongGuesses++;
+            if (guesses.length >= maxGuesses) {
+                gameOver = true;
+                showGameResult(false);
+            }
         }
         
         updateGuessCount();
+        updateHintButtons();
         
         // Reset input
         document.getElementById('playerInput').value = '';
@@ -478,12 +545,27 @@
         guesses = [];
         gameWon = false;
         gameOver = false;
+        wrongGuesses = 0;
+        teamHintUsed = false;
+        initialHintUsed = false;
         
         document.getElementById('guessesList').innerHTML = '';
         document.getElementById('guessesHeader').style.display = 'none';
         document.getElementById('gameStatus').innerHTML = '';
         document.getElementById('guessCount').textContent = '0';
         document.getElementById('playerInput').value = '';
+        
+        // Reset hint buttons
+        const teamHintButton = document.getElementById('teamHintButton');
+        const initialHintButton = document.getElementById('initialHintButton');
+        teamHintButton.textContent = 'Team';
+        teamHintButton.style.background = '#ccc';
+        teamHintButton.disabled = true;
+        teamHintButton.style.cursor = 'not-allowed';
+        initialHintButton.textContent = 'Initial';
+        initialHintButton.style.background = '#ccc';
+        initialHintButton.disabled = true;
+        initialHintButton.style.cursor = 'not-allowed';
         
         selectedPlayerIndex = null;
         hideDropdown();
@@ -494,6 +576,8 @@
     // Global functions
     window.makeGuess = makeGuess;
     window.startNewGame = startNewGame;
+    window.useTeamHint = useTeamHint;
+    window.useInitialHint = useInitialHint;
     
     // Auto-initialize when script loads
     if (window.initializeGame) {
