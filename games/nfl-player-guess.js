@@ -35,19 +35,17 @@
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
-                        <button id="guessButton" onclick="makeGuess()" disabled style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: not-allowed; font-size: 16px;">
-                            Make Guess
+                        <span style="font-weight: bold; color: #666;">Hints:</span>
+                        <button id="teamHintButton" onclick="useTeamHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 16px; border-radius: 4px;">
+                            Team
                         </button>
-                        <div style="display: flex; gap: 10px;">
-                            <span style="font-weight: bold; color: #666;">Hints:</span>
-                            <button id="teamHintButton" onclick="useTeamHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 16px; border-radius: 4px;">
-                                Team
-                            </button>
-                            <button id="initialHintButton" onclick="useInitialHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 16px; border-radius: 4px;">
-                                Initial
-                            </button>
-                        </div>
+                        <button id="initialHintButton" onclick="useInitialHint()" disabled style="padding: 8px 16px; background: #ccc; color: white; border: none; cursor: not-allowed; font-size: 16px; border-radius: 4px;">
+                            Initial
+                        </button>
                     </div>
+                    <button id="guessButton" onclick="makeGuess()" disabled style="padding: 10px 20px; background: #007cba; color: white; border: none; cursor: not-allowed; font-size: 16px; margin-top: 10px;">
+                        Make Guess
+                    </button>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
@@ -129,7 +127,7 @@
                 </div>
                 
                 <div style="margin-top: 20px;">
-                    <button onclick="startNewGame()" style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; margin-right: 10px; font-size: 16px;">
+                    <button id="newGameButton" onclick="startNewGame()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-right: 10px; font-size: 16px;">
                         New Game
                     </button>
                     <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; font-size: 16px;">
@@ -537,6 +535,20 @@
         } else {
             statusDiv.innerHTML = `😔 <span style="color: red;">Game Over! The answer was ${targetPlayer.Player} (${targetPlayer.Team} ${targetPlayer.Position})</span>`;
         }
+        updateNewGameButton();
+    }
+    
+    function updateNewGameButton() {
+        const newGameButton = document.getElementById('newGameButton');
+        if (gameOver) {
+            newGameButton.style.background = '#28a745';
+            newGameButton.style.color = 'white';
+            newGameButton.style.border = 'none';
+        } else {
+            newGameButton.style.background = 'white';
+            newGameButton.style.color = 'black';
+            newGameButton.style.border = '2px solid black';
+        }
     }
     
     function startNewGame() {
@@ -569,6 +581,7 @@
         hideDropdown();
         selectRandomTarget();
         updateGuessButton();
+        updateNewGameButton();
     }
     
     // Global functions
