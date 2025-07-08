@@ -55,12 +55,12 @@ function setupGameUI() {
             
             <div id="loading-screen" class="loading-screen">
                 <div class="spinner"></div>
-                <p>Loading 2025 MLB player data...</p>
+                <p>Loading 2024 MLB player data...</p>
             </div>
             
             <div id="game-content" class="game-content" style="display: none;">
                 <div class="question-container">
-                    <h2 id="question-text">Who has more runs in 2025?</h2>
+                    <h2 id="question-text">Who has more runs in 2024?</h2>
                 </div>
                 
                 <div class="players-comparison">
@@ -424,8 +424,8 @@ function showError(message) {
 
 async function loadPlayerData() {
     try {
-        // Get MLB teams
-        const teamsResponse = await fetch('http://lookup-service-prod.mlb.com/json/named.team_all_season.bam?sport_id=1&all_star_sw=%27N%27&sort_order=name_asc&season=2025');
+        // Get MLB teams for 2024 season (2025 might not be available yet)
+        const teamsResponse = await fetch('http://lookup-service-prod.mlb.com/json/named.team_all_season.bam?sport_id=1&all_star_sw=%27N%27&sort_order=name_asc&season=2024');
         const teamsData = await teamsResponse.json();
         
         if (!teamsData.team_all_season?.queryResults?.row) {
@@ -437,7 +437,7 @@ async function loadPlayerData() {
             : [teamsData.team_all_season.queryResults.row];
         
         // Load players from multiple teams
-        const selectedTeams = teams.slice(0, 12); // Use 12 teams for good variety
+        const selectedTeams = teams.slice(0, 8); // Reduce to 8 teams for faster loading
         
         for (const team of selectedTeams) {
             try {
@@ -452,11 +452,14 @@ async function loadPlayerData() {
                         ? rosterData.roster_40.queryResults.row
                         : [rosterData.roster_40.queryResults.row];
                     
-                    // Get stats for each player
-                    for (const player of teamPlayers) {
+                    // Get stats for each player (limit to first 15 players per team for speed)
+                    const playersToProcess = teamPlayers.slice(0, 15);
+                    
+                    for (const player of playersToProcess) {
                         try {
+                            // Get hitting stats
                             const statsResponse = await fetch(
-                                `http://lookup-service-prod.mlb.com/json/named.sport_hitting_tm.bam?league_list_id='mlb'&game_type='R'&season='2025'&player_id='${player.player_id}'`
+                                `http://lookup-service-prod.mlb.com/json/named.sport_hitting_tm.bam?league_list_id='mlb'&game_type='R'&season='2024'&player_id='${player.player_id}'`
                             );
                             const statsData = await statsResponse.json();
                             
@@ -476,14 +479,18 @@ async function loadPlayerData() {
                                     gameState.positionPlayers.push(playerWithStats);
                                 } else if (player.position_txt && player.position_txt.includes('P')) {
                                     // Get pitching stats for pitchers
-                                    const pitchingResponse = await fetch(
-                                        `http://lookup-service-prod.mlb.com/json/named.sport_pitching_tm.bam?league_list_id='mlb'&game_type='R'&season='2025'&player_id='${player.player_id}'`
-                                    );
-                                    const pitchingData = await pitchingResponse.json();
-                                    
-                                    if (pitchingData.sport_pitching_tm?.queryResults?.row) {
-                                        playerWithStats.pitchingStats = pitchingData.sport_pitching_tm.queryResults.row;
-                                        gameState.pitchers.push(playerWithStats);
+                                    try {
+                                        const pitchingResponse = await fetch(
+                                            `http://lookup-service-prod.mlb.com/json/named.sport_pitching_tm.bam?league_list_id='mlb'&game_type='R'&season='2024'&player_id='${player.player_id}'`
+                                        );
+                                        const pitchingData = await pitchingResponse.json();
+                                        
+                                        if (pitchingData.sport_pitching_tm?.queryResults?.row) {
+                                            playerWithStats.pitchingStats = pitchingData.sport_pitching_tm.queryResults.row;
+                                            gameState.pitchers.push(playerWithStats);
+                                        }
+                                    } catch (error) {
+                                        console.warn(`Failed to load pitching stats for ${player.player_id}:`, error);
                                     }
                                 }
                             }
@@ -497,12 +504,12 @@ async function loadPlayerData() {
             }
         }
         
-        // Filter players with meaningful stats (at least 10 plate appearances for hitters, 5 games for pitchers)
+        // Filter players with meaningful stats (at least 50 at-bats for hitters, 10 games for pitchers)
         gameState.positionPlayers = gameState.positionPlayers.filter(player => 
-            player.stats && parseInt(player.stats.ab || 0) >= 10
+            player.stats && parseInt(player.stats.ab || 0) >= 50
         );
         gameState.pitchers = gameState.pitchers.filter(pitcher => 
-            pitcher.pitchingStats && parseInt(pitcher.pitchingStats.g || 0) >= 5
+            pitcher.pitchingStats && parseInt(pitcher.pitchingStats.g || 0) >= 10
         );
         
         console.log(`Loaded ${gameState.positionPlayers.length} position players and ${gameState.pitchers.length} pitchers`);
@@ -558,7 +565,7 @@ function setupNewQuestion() {
     };
     
     // Update question text
-    document.getElementById('question-text').textContent = `Who has more ${statLabel.toLowerCase()} in 2025?`;
+    document.getElementById('question-text').textContent = `Who has more ${statLabel.toLowerCase()} in 2024?`;
     
     // Update player cards
     document.getElementById('player-1-name').textContent = player1.name;
