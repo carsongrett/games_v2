@@ -1,39 +1,12 @@
-// MLB Stats Showdown - Compare 2025 Player Stats
+// MLB Record Showdown - Compare 2025 Team Records
 
 let gameState = {
-    positionPlayers: [],
-    pitchers: [],
+    teams: [],
     currentQuestion: 1,
     totalQuestions: 10,
     score: 0,
     currentComparison: null,
     isLoading: false
-};
-
-// Available stats for comparison
-const HITTING_STATS = ['r', 'h', 'd', 't', 'hr', 'rbi', 'sb', 'bb', 'so'];
-const PITCHING_STATS = ['w', 'l', 'era', 'g', 'gs', 'sv', 'ip', 'h', 'er', 'bb', 'so'];
-
-const STAT_LABELS = {
-    // Hitting stats
-    'r': 'Runs',
-    'h': 'Hits', 
-    'd': 'Doubles',
-    't': 'Triples',
-    'hr': 'Home Runs',
-    'rbi': 'RBIs',
-    'sb': 'Stolen Bases',
-    'bb': 'Walks',
-    'so': 'Strikeouts',
-    // Pitching stats
-    'w': 'Wins',
-    'l': 'Losses',
-    'era': 'ERA',
-    'g': 'Games',
-    'gs': 'Games Started',
-    'sv': 'Saves',
-    'ip': 'Innings Pitched',
-    'er': 'Earned Runs'
 };
 
 // Game initialization
@@ -44,9 +17,9 @@ window.initializeGame = function() {
 
 function setupGameUI() {
     document.getElementById('game-container').innerHTML = `
-        <div id="mlb-showdown-game">
+        <div id="mlb-record-game">
             <div class="game-header">
-                <h1>MLB Stats Showdown</h1>
+                <h1>MLB Record Showdown</h1>
                 <div class="game-info">
                     <span class="question-counter">Question <span id="current-question">1</span> of ${gameState.totalQuestions}</span>
                     <span class="score">Score: <span id="current-score">0</span>/${gameState.totalQuestions}</span>
@@ -55,27 +28,26 @@ function setupGameUI() {
             
             <div id="loading-screen" class="loading-screen">
                 <div class="spinner"></div>
-                <p>Loading 2024 MLB player data...</p>
+                <p>Loading 2025 MLB standings...</p>
             </div>
             
             <div id="game-content" class="game-content" style="display: none;">
                 <div class="question-container">
-                    <h2 id="question-text">Who has more runs in 2024?</h2>
+                    <h2>Which team has a better record in 2025?</h2>
+                    <p class="instruction">Choose the team with more wins (or better win % if tied)</p>
                 </div>
                 
-                <div class="players-comparison">
-                    <div class="player-option" id="player-1-card" onclick="selectPlayer(1)">
-                        <div class="player-name" id="player-1-name"></div>
-                        <div class="player-team" id="player-1-team"></div>
-                        <div class="player-position" id="player-1-position"></div>
+                <div class="teams-comparison">
+                    <div class="team-option" id="team-1-card" onclick="selectTeam(1)">
+                        <div class="team-name" id="team-1-name"></div>
+                        <div class="team-division" id="team-1-division"></div>
                     </div>
                     
                     <div class="vs-divider">VS</div>
                     
-                    <div class="player-option" id="player-2-card" onclick="selectPlayer(2)">
-                        <div class="player-name" id="player-2-name"></div>
-                        <div class="player-team" id="player-2-team"></div>
-                        <div class="player-position" id="player-2-position"></div>
+                    <div class="team-option" id="team-2-card" onclick="selectTeam(2)">
+                        <div class="team-name" id="team-2-name"></div>
+                        <div class="team-division" id="team-2-division"></div>
                     </div>
                 </div>
                 
@@ -83,14 +55,22 @@ function setupGameUI() {
                     <div class="result-header">
                         <h3 id="result-message"></h3>
                     </div>
-                    <div class="stats-reveal">
-                        <div class="player-stat-box" id="player-1-stats">
-                            <h4 id="player-1-result-name"></h4>
-                            <div class="stat-value" id="player-1-stat-value"></div>
+                    <div class="records-reveal">
+                        <div class="team-record-box" id="team-1-record">
+                            <h4 id="team-1-result-name"></h4>
+                            <div class="record-stats">
+                                <div class="wins-losses" id="team-1-record-text"></div>
+                                <div class="win-pct" id="team-1-win-pct"></div>
+                                <div class="games-back" id="team-1-games-back"></div>
+                            </div>
                         </div>
-                        <div class="player-stat-box" id="player-2-stats">
-                            <h4 id="player-2-result-name"></h4>
-                            <div class="stat-value" id="player-2-stat-value"></div>
+                        <div class="team-record-box" id="team-2-record">
+                            <h4 id="team-2-result-name"></h4>
+                            <div class="record-stats">
+                                <div class="wins-losses" id="team-2-record-text"></div>
+                                <div class="win-pct" id="team-2-win-pct"></div>
+                                <div class="games-back" id="team-2-games-back"></div>
+                            </div>
                         </div>
                     </div>
                     <button id="next-question-btn" class="next-btn" onclick="nextQuestion()">Next Question</button>
@@ -113,7 +93,7 @@ function setupGameUI() {
         </div>
         
         <style>
-            #mlb-showdown-game {
+            #mlb-record-game {
                 max-width: 900px;
                 margin: 0 auto;
                 padding: 20px;
@@ -178,11 +158,18 @@ function setupGameUI() {
             .question-container h2 {
                 color: #2d3748;
                 font-size: 1.8em;
-                margin: 0;
+                margin: 0 0 10px 0;
                 font-weight: bold;
             }
             
-            .players-comparison {
+            .instruction {
+                color: #718096;
+                font-size: 1.1em;
+                margin: 0;
+                font-style: italic;
+            }
+            
+            .teams-comparison {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -190,42 +177,37 @@ function setupGameUI() {
                 margin-bottom: 40px;
             }
             
-            .player-option {
+            .team-option {
                 flex: 1;
                 background: white;
                 border: 3px solid #e2e8f0;
                 border-radius: 16px;
-                padding: 30px 20px;
+                padding: 35px 25px;
                 text-align: center;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                min-height: 140px;
+                min-height: 150px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
             }
             
-            .player-option:hover {
+            .team-option:hover {
                 border-color: #3182ce;
                 transform: translateY(-4px);
                 box-shadow: 0 10px 30px rgba(49, 130, 206, 0.15);
             }
             
-            .player-name {
-                font-size: 1.4em;
+            .team-name {
+                font-size: 1.5em;
                 font-weight: bold;
                 color: #1a365d;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
+                line-height: 1.2;
             }
             
-            .player-team {
-                font-size: 1.1em;
-                color: #4a5568;
-                margin-bottom: 6px;
-            }
-            
-            .player-position {
-                font-size: 0.95em;
+            .team-division {
+                font-size: 1em;
                 color: #718096;
                 font-style: italic;
             }
@@ -252,32 +234,50 @@ function setupGameUI() {
                 font-size: 1.6em;
             }
             
-            .stats-reveal {
+            .records-reveal {
                 display: flex;
                 justify-content: space-around;
                 gap: 25px;
                 margin-bottom: 30px;
             }
             
-            .player-stat-box {
+            .team-record-box {
                 flex: 1;
                 background: white;
-                padding: 20px;
+                padding: 25px;
                 border-radius: 12px;
                 border: 2px solid #e2e8f0;
                 text-align: center;
             }
             
-            .player-stat-box h4 {
+            .team-record-box h4 {
                 margin: 0 0 15px 0;
                 color: #2d3748;
                 font-size: 1.2em;
+                font-weight: bold;
             }
             
-            .stat-value {
-                font-size: 2.2em;
+            .record-stats {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .wins-losses {
+                font-size: 1.8em;
                 font-weight: bold;
                 color: #3182ce;
+            }
+            
+            .win-pct {
+                font-size: 1.2em;
+                color: #4a5568;
+            }
+            
+            .games-back {
+                font-size: 1em;
+                color: #718096;
+                font-style: italic;
             }
             
             .next-btn {
@@ -360,7 +360,7 @@ function setupGameUI() {
             }
             
             @media (max-width: 768px) {
-                .players-comparison {
+                .teams-comparison {
                     flex-direction: column;
                     gap: 20px;
                 }
@@ -369,7 +369,7 @@ function setupGameUI() {
                     font-size: 2em;
                 }
                 
-                .stats-reveal {
+                .records-reveal {
                     flex-direction: column;
                     gap: 15px;
                 }
@@ -383,6 +383,10 @@ function setupGameUI() {
                     flex-direction: column;
                     align-items: center;
                 }
+                
+                .team-name {
+                    font-size: 1.3em;
+                }
             }
         </style>
     `;
@@ -393,12 +397,12 @@ async function initializeGame() {
     showLoading(true);
     
     try {
-        await loadPlayerData();
+        await loadStandingsData();
         setupNewQuestion();
         showLoading(false);
     } catch (error) {
         console.error('Error initializing game:', error);
-        showError('Failed to load MLB player data. Please try again.');
+        showError('Failed to load MLB standings data. Please try again.');
     }
 }
 
@@ -422,104 +426,47 @@ function showError(message) {
     `;
 }
 
-async function loadPlayerData() {
+async function loadStandingsData() {
     try {
-        // Get MLB teams for 2024 season (2025 might not be available yet)
-        const teamsResponse = await fetch('http://lookup-service-prod.mlb.com/json/named.team_all_season.bam?sport_id=1&all_star_sw=%27N%27&sort_order=name_asc&season=2024');
-        const teamsData = await teamsResponse.json();
+        const response = await fetch('https://statsapi.mlb.com/api/v1/standings?season=2025&leagueId=103,104&standingsTypes=regularSeason');
+        const data = await response.json();
         
-        if (!teamsData.team_all_season?.queryResults?.row) {
-            throw new Error('No teams data available');
+        if (!data.records || data.records.length === 0) {
+            throw new Error('No standings data available');
         }
         
-        const teams = Array.isArray(teamsData.team_all_season.queryResults.row) 
-            ? teamsData.team_all_season.queryResults.row 
-            : [teamsData.team_all_season.queryResults.row];
+        // Parse all teams from both leagues
+        gameState.teams = [];
         
-        // Load players from multiple teams
-        const selectedTeams = teams.slice(0, 8); // Reduce to 8 teams for faster loading
-        
-        for (const team of selectedTeams) {
-            try {
-                // Get roster
-                const rosterResponse = await fetch(
-                    `http://lookup-service-prod.mlb.com/json/named.roster_40.bam?team_id=${team.team_id}`
-                );
-                const rosterData = await rosterResponse.json();
-                
-                if (rosterData.roster_40?.queryResults?.row) {
-                    const teamPlayers = Array.isArray(rosterData.roster_40.queryResults.row)
-                        ? rosterData.roster_40.queryResults.row
-                        : [rosterData.roster_40.queryResults.row];
-                    
-                    // Get stats for each player (limit to first 15 players per team for speed)
-                    const playersToProcess = teamPlayers.slice(0, 15);
-                    
-                    for (const player of playersToProcess) {
-                        try {
-                            // Get hitting stats
-                            const statsResponse = await fetch(
-                                `http://lookup-service-prod.mlb.com/json/named.sport_hitting_tm.bam?league_list_id='mlb'&game_type='R'&season='2024'&player_id='${player.player_id}'`
-                            );
-                            const statsData = await statsResponse.json();
-                            
-                            if (statsData.sport_hitting_tm?.queryResults?.row) {
-                                const stats = statsData.sport_hitting_tm.queryResults.row;
-                                const playerWithStats = {
-                                    id: player.player_id,
-                                    name: `${player.name_first} ${player.name_last}`,
-                                    team: team.name_display_full,
-                                    teamAbbrev: team.name_abbrev,
-                                    position: player.position_txt,
-                                    stats: stats
-                                };
-                                
-                                // Separate position players from pitchers
-                                if (player.position_txt && !player.position_txt.includes('P')) {
-                                    gameState.positionPlayers.push(playerWithStats);
-                                } else if (player.position_txt && player.position_txt.includes('P')) {
-                                    // Get pitching stats for pitchers
-                                    try {
-                                        const pitchingResponse = await fetch(
-                                            `http://lookup-service-prod.mlb.com/json/named.sport_pitching_tm.bam?league_list_id='mlb'&game_type='R'&season='2024'&player_id='${player.player_id}'`
-                                        );
-                                        const pitchingData = await pitchingResponse.json();
-                                        
-                                        if (pitchingData.sport_pitching_tm?.queryResults?.row) {
-                                            playerWithStats.pitchingStats = pitchingData.sport_pitching_tm.queryResults.row;
-                                            gameState.pitchers.push(playerWithStats);
-                                        }
-                                    } catch (error) {
-                                        console.warn(`Failed to load pitching stats for ${player.player_id}:`, error);
-                                    }
-                                }
-                            }
-                        } catch (error) {
-                            console.warn(`Failed to load stats for player ${player.player_id}:`, error);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn(`Failed to load roster for team ${team.name_display_full}:`, error);
+        data.records.forEach(record => {
+            const divisionName = record.division?.name || record.league?.name || 'Unknown Division';
+            
+            if (record.teamRecords) {
+                record.teamRecords.forEach(teamRecord => {
+                    const team = {
+                        id: teamRecord.team.id,
+                        name: teamRecord.team.name,
+                        wins: teamRecord.wins,
+                        losses: teamRecord.losses,
+                        winningPercentage: parseFloat(teamRecord.winningPercentage),
+                        gamesBack: teamRecord.gamesBack,
+                        divisionRank: teamRecord.divisionRank,
+                        wildCardRank: teamRecord.wildCardRank,
+                        division: divisionName
+                    };
+                    gameState.teams.push(team);
+                });
             }
-        }
+        });
         
-        // Filter players with meaningful stats (at least 50 at-bats for hitters, 10 games for pitchers)
-        gameState.positionPlayers = gameState.positionPlayers.filter(player => 
-            player.stats && parseInt(player.stats.ab || 0) >= 50
-        );
-        gameState.pitchers = gameState.pitchers.filter(pitcher => 
-            pitcher.pitchingStats && parseInt(pitcher.pitchingStats.g || 0) >= 10
-        );
+        console.log(`Loaded ${gameState.teams.length} MLB teams`);
         
-        console.log(`Loaded ${gameState.positionPlayers.length} position players and ${gameState.pitchers.length} pitchers`);
-        
-        if (gameState.positionPlayers.length < 4) {
-            throw new Error('Not enough position player data available');
+        if (gameState.teams.length < 4) {
+            throw new Error('Not enough teams data available');
         }
         
     } catch (error) {
-        console.error('Error loading player data:', error);
+        console.error('Error loading standings data:', error);
         throw error;
     }
 }
@@ -534,53 +481,29 @@ function setupNewQuestion() {
     document.getElementById('current-question').textContent = gameState.currentQuestion;
     document.getElementById('current-score').textContent = gameState.score;
     
-    // Choose player type and stat
-    const usePitchers = Math.random() < 0.3 && gameState.pitchers.length >= 2; // 30% chance for pitchers
-    const playerPool = usePitchers ? gameState.pitchers : gameState.positionPlayers;
-    const statPool = usePitchers ? PITCHING_STATS : HITTING_STATS;
-    
-    // Select two different players
-    const shuffled = [...playerPool].sort(() => 0.5 - Math.random());
-    const player1 = shuffled[0];
-    const player2 = shuffled[1];
-    
-    // Select random stat
-    const stat = statPool[Math.floor(Math.random() * statPool.length)];
-    const statLabel = STAT_LABELS[stat];
-    
-    // Get stat values
-    const statsToUse = usePitchers ? 'pitchingStats' : 'stats';
-    const player1Value = parseFloat(player1[statsToUse][stat] || 0);
-    const player2Value = parseFloat(player2[statsToUse][stat] || 0);
+    // Select two different teams randomly
+    const shuffled = [...gameState.teams].sort(() => 0.5 - Math.random());
+    const team1 = shuffled[0];
+    const team2 = shuffled[1];
     
     // Store comparison data
     gameState.currentComparison = {
-        player1,
-        player2,
-        stat,
-        statLabel,
-        player1Value,
-        player2Value,
-        isPitching: usePitchers
+        team1,
+        team2
     };
     
-    // Update question text
-    document.getElementById('question-text').textContent = `Who has more ${statLabel.toLowerCase()} in 2024?`;
+    // Update team cards
+    document.getElementById('team-1-name').textContent = team1.name;
+    document.getElementById('team-1-division').textContent = team1.division;
     
-    // Update player cards
-    document.getElementById('player-1-name').textContent = player1.name;
-    document.getElementById('player-1-team').textContent = player1.teamAbbrev;
-    document.getElementById('player-1-position').textContent = player1.position;
-    
-    document.getElementById('player-2-name').textContent = player2.name;
-    document.getElementById('player-2-team').textContent = player2.teamAbbrev;
-    document.getElementById('player-2-position').textContent = player2.position;
+    document.getElementById('team-2-name').textContent = team2.name;
+    document.getElementById('team-2-division').textContent = team2.division;
     
     // Hide result display
     document.getElementById('result-display').style.display = 'none';
     
-    // Show player cards
-    document.querySelectorAll('.player-option').forEach(card => {
+    // Show team cards
+    document.querySelectorAll('.team-option').forEach(card => {
         card.style.display = 'flex';
         card.style.pointerEvents = 'auto';
         card.style.opacity = '1';
@@ -588,26 +511,35 @@ function setupNewQuestion() {
     document.querySelector('.question-container').style.display = 'block';
 }
 
-function selectPlayer(playerNumber) {
-    const { player1, player2, player1Value, player2Value, stat, statLabel } = gameState.currentComparison;
-    const selectedPlayer = playerNumber === 1 ? player1 : player2;
-    const selectedValue = playerNumber === 1 ? player1Value : player2Value;
-    const otherPlayer = playerNumber === 1 ? player2 : player1;
-    const otherValue = playerNumber === 1 ? player2Value : player1Value;
+function selectTeam(teamNumber) {
+    const { team1, team2 } = gameState.currentComparison;
+    const selectedTeam = teamNumber === 1 ? team1 : team2;
+    const otherTeam = teamNumber === 1 ? team2 : team1;
     
-    // Determine if guess is correct
-    const isCorrect = selectedValue >= otherValue;
+    // Determine which team has better record
+    // First by wins, then by winning percentage
+    let betterTeam;
+    if (team1.wins > team2.wins) {
+        betterTeam = team1;
+    } else if (team2.wins > team1.wins) {
+        betterTeam = team2;
+    } else {
+        // Tied on wins, use winning percentage
+        betterTeam = team1.winningPercentage >= team2.winningPercentage ? team1 : team2;
+    }
+    
+    const isCorrect = selectedTeam.id === betterTeam.id;
     
     if (isCorrect) {
         gameState.score++;
     }
     
-    showResult(selectedPlayer, otherPlayer, selectedValue, otherValue, isCorrect, statLabel);
+    showResult(selectedTeam, otherTeam, isCorrect, betterTeam);
 }
 
-function showResult(selectedPlayer, otherPlayer, selectedValue, otherValue, isCorrect, statLabel) {
-    // Hide player selection
-    document.querySelectorAll('.player-option').forEach(card => {
+function showResult(selectedTeam, otherTeam, isCorrect, betterTeam) {
+    // Hide team selection
+    document.querySelectorAll('.team-option').forEach(card => {
         card.style.pointerEvents = 'none';
         card.style.opacity = '0.7';
     });
@@ -620,23 +552,29 @@ function showResult(selectedPlayer, otherPlayer, selectedValue, otherValue, isCo
     document.getElementById('result-message').textContent = resultMessage;
     document.getElementById('result-message').style.color = isCorrect ? '#38a169' : '#e53e3e';
     
-    // Show stats
-    document.getElementById('player-1-result-name').textContent = gameState.currentComparison.player1.name;
-    document.getElementById('player-1-stat-value').textContent = gameState.currentComparison.player1Value;
+    // Show team records
+    const { team1, team2 } = gameState.currentComparison;
     
-    document.getElementById('player-2-result-name').textContent = gameState.currentComparison.player2.name;
-    document.getElementById('player-2-stat-value').textContent = gameState.currentComparison.player2Value;
+    document.getElementById('team-1-result-name').textContent = team1.name;
+    document.getElementById('team-1-record-text').textContent = `${team1.wins}-${team1.losses}`;
+    document.getElementById('team-1-win-pct').textContent = `${(team1.winningPercentage * 100).toFixed(1)}%`;
+    document.getElementById('team-1-games-back').textContent = team1.gamesBack === '0.0' ? 'Leading division' : `${team1.gamesBack} GB`;
     
-    // Highlight winner
-    const player1Box = document.getElementById('player-1-stats');
-    const player2Box = document.getElementById('player-2-stats');
+    document.getElementById('team-2-result-name').textContent = team2.name;
+    document.getElementById('team-2-record-text').textContent = `${team2.wins}-${team2.losses}`;
+    document.getElementById('team-2-win-pct').textContent = `${(team2.winningPercentage * 100).toFixed(1)}%`;
+    document.getElementById('team-2-games-back').textContent = team2.gamesBack === '0.0' ? 'Leading division' : `${team2.gamesBack} GB`;
     
-    if (gameState.currentComparison.player1Value > gameState.currentComparison.player2Value) {
-        player1Box.style.borderColor = '#38a169';
-        player1Box.style.background = '#f0fff4';
-    } else if (gameState.currentComparison.player2Value > gameState.currentComparison.player1Value) {
-        player2Box.style.borderColor = '#38a169';
-        player2Box.style.background = '#f0fff4';
+    // Highlight better team
+    const team1Box = document.getElementById('team-1-record');
+    const team2Box = document.getElementById('team-2-record');
+    
+    if (betterTeam.id === team1.id) {
+        team1Box.style.borderColor = '#38a169';
+        team1Box.style.background = '#f0fff4';
+    } else {
+        team2Box.style.borderColor = '#38a169';
+        team2Box.style.background = '#f0fff4';
     }
     
     // Update score display
@@ -667,13 +605,13 @@ function showFinalScreen() {
     const percentage = (gameState.score / gameState.totalQuestions) * 100;
     
     if (percentage >= 90) {
-        message = '🏆 Incredible! You\'re a true MLB stats expert!';
+        message = '🏆 Amazing! You really know MLB team records!';
     } else if (percentage >= 70) {
-        message = '⚾ Great job! You really know your baseball stats!';
+        message = '⚾ Great job! You\'re following the standings closely!';
     } else if (percentage >= 50) {
-        message = '👍 Nice work! Keep following those stats!';
+        message = '👍 Not bad! Keep tracking those team records!';
     } else {
-        message = '📊 Keep practicing! MLB stats can be tricky!';
+        message = '📊 The standings can be tricky! Keep following the season!';
     }
     
     document.getElementById('performance-message').textContent = message;
@@ -682,8 +620,7 @@ function showFinalScreen() {
 function playAgain() {
     // Reset game state
     gameState = {
-        positionPlayers: gameState.positionPlayers, // Keep loaded players
-        pitchers: gameState.pitchers,
+        teams: gameState.teams, // Keep loaded teams
         currentQuestion: 1,
         totalQuestions: 10,
         score: 0,
