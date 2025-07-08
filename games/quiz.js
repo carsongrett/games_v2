@@ -38,14 +38,14 @@ function setupGameUI() {
                 </div>
                 
                 <div class="teams-comparison">
-                    <div class="team-option" id="team-1-card" onclick="selectTeam(1)">
+                    <div class="team-option" id="team-1-card">
                         <div class="team-name" id="team-1-name"></div>
                         <div class="team-division" id="team-1-division"></div>
                     </div>
                     
                     <div class="vs-divider">VS</div>
                     
-                    <div class="team-option" id="team-2-card" onclick="selectTeam(2)">
+                    <div class="team-option" id="team-2-card">
                         <div class="team-name" id="team-2-name"></div>
                         <div class="team-division" id="team-2-division"></div>
                     </div>
@@ -73,7 +73,7 @@ function setupGameUI() {
                             </div>
                         </div>
                     </div>
-                    <button id="next-question-btn" class="next-btn" onclick="nextQuestion()">Next Question</button>
+                    <button id="next-question-btn" class="next-btn">Next Question</button>
                 </div>
             </div>
             
@@ -85,8 +85,8 @@ function setupGameUI() {
                         <p id="performance-message"></p>
                     </div>
                     <div class="final-buttons">
-                        <button class="play-again-btn" onclick="playAgain()">Play Again</button>
-                        <button class="home-btn" onclick="goHome()">Back to Home</button>
+                        <button id="play-again-btn" class="play-again-btn">Play Again</button>
+                        <button id="home-btn" class="home-btn">Back to Home</button>
                     </div>
                 </div>
             </div>
@@ -390,6 +390,22 @@ function setupGameUI() {
             }
         </style>
     `;
+    
+    // Add event listeners after DOM is created
+    setupEventListeners();
+}
+
+function setupEventListeners() {
+    // Team selection event listeners
+    document.getElementById('team-1-card').addEventListener('click', () => selectTeam(1));
+    document.getElementById('team-2-card').addEventListener('click', () => selectTeam(2));
+    
+    // Next question button
+    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+    
+    // Final screen buttons
+    document.getElementById('play-again-btn').addEventListener('click', playAgain);
+    document.getElementById('home-btn').addEventListener('click', goHome);
 }
 
 async function initializeGame() {
@@ -416,14 +432,18 @@ function showError(message) {
         <div style="text-align: center; padding: 60px 20px;">
             <h2>Oops! Something went wrong</h2>
             <p>${message}</p>
-            <button onclick="initializeGame()" style="padding: 12px 24px; background: #3182ce; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 15px;">
+            <button id="retry-btn" style="padding: 12px 24px; background: #3182ce; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 15px;">
                 Try Again
             </button>
-            <button onclick="goHome()" style="padding: 12px 24px; background: #718096; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 15px;">
+            <button id="error-home-btn" style="padding: 12px 24px; background: #718096; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 15px;">
                 Back to Home
             </button>
         </div>
     `;
+    
+    // Add event listeners for error screen buttons
+    document.getElementById('retry-btn').addEventListener('click', initializeGame);
+    document.getElementById('error-home-btn').addEventListener('click', goHome);
 }
 
 async function loadStandingsData() {
