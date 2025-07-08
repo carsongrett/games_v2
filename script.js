@@ -53,7 +53,7 @@ function showGamePlaceholder(game) {
         <div class="container">
             <header>
                 <h1>${game.name}</h1>
-                <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
+                <button id="back-to-home-btn" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer; margin-bottom: 20px;">
                     Back to Home
                 </button>
             </header>
@@ -65,6 +65,9 @@ function showGamePlaceholder(game) {
             </main>
         </div>
     `;
+    
+    // Add event listener for back button
+    document.getElementById('back-to-home-btn').addEventListener('click', goHome);
 }
 
 function loadGameScript(gameName) {
@@ -93,11 +96,14 @@ function showGameError(gameName) {
         <h2>Game Coming Soon</h2>
         <p>The ${gameName} game is under development.</p>
         <p style="margin-top: 20px;">
-            <button onclick="goHome()" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
+            <button id="error-back-home-btn" style="padding: 10px 20px; background: white; border: 2px solid black; cursor: pointer;">
                 Back to Home
             </button>
         </p>
     `;
+    
+    // Add event listener for error back button
+    document.getElementById('error-back-home-btn').addEventListener('click', goHome);
 }
 
 
@@ -108,7 +114,7 @@ function goHome() {
 
 function showHomepage() {
     const gameCards = games.map(game => `
-        <div class="game-card" onclick="navigateToGame('${game.id}')">
+        <div class="game-card" data-game-id="${game.id}">
             <h2>${game.name}</h2>
             <p>${game.description}</p>
         </div>
@@ -132,6 +138,14 @@ function showHomepage() {
             </footer>
         </div>
     `;
+    
+    // Add event listeners for game cards
+    document.querySelectorAll('.game-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const gameId = card.getAttribute('data-game-id');
+            navigateToGame(gameId);
+        });
+    });
 }
 
 // Initialize routing when page loads
