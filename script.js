@@ -3,7 +3,7 @@ const games = [
     { id: "nfl-player-guess", name: "Guess the NFL Player", description: "Guess the NFL player based on 2024 stats" },
     { id: "mlb-player-guess", name: "Guess the MLB Player", description: "Guess the MLB player based on 2025 stats" },
     { id: "breakout", name: "Guess the NBA Player", description: "Guess the NBA player based on 2024-25 stats" },
-    { id: "quiz", name: "General Quiz", description: "Test your knowledge" },
+    { id: "quiz", name: "MLB Stat Shuffle", description: "Guess the player from their single-game statline" },
     { id: "math", name: "Math Trivia", description: "Numbers and equations" }
 ];
 
