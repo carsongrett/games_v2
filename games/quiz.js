@@ -1,524 +1,667 @@
-// MLB Stat Shuffle Game - Guess player from single-game statline
-(function() {
-    let allPlayers = [];
-    let currentGame = null;
-    let guesses = [];
-    let gameOver = false;
-    let gameWon = false;
-    const maxGuesses = 6;
-    let isLoading = false;
-    
-    // Use MLB lookup service which allows CORS
-    const MLB_LOOKUP_BASE = 'http://lookup-service-prod.mlb.com/json/named';
-    
-    // Initialize the game when this script loads
-    window.initializeGame = function() {
-        showMLBStatShuffleGame();
-    };
-    
-    function showMLBStatShuffleGame() {
-        document.getElementById('game-container').innerHTML = `
-            <div style="text-align: center; max-width: 800px; margin: 0 auto;" id="gameContainer">
-                <h2>MLB Stat Shuffle</h2>
-                <p style="margin-bottom: 20px; color: #666;">Guess the MLB player from their single-game statline</p>
+// Who Had the Better Week? - MLB Player Comparison Game
+
+let gameState = {
+    players: [],
+    currentRound: 1,
+    totalRounds: 5,
+    score: 0,
+    currentMatchup: null,
+    isLoading: false
+};
+
+// Game initialization
+window.initializeGame = function() {
+    setupGameUI();
+    initializeGame();
+};
+
+function setupGameUI() {
+    document.getElementById('game-container').innerHTML = `
+        <div id="better-week-game">
+            <div class="game-header">
+                <h1>Who Had the Better Week?</h1>
+                <div class="game-info">
+                    <span class="round-counter">Round <span id="current-round">1</span> of ${gameState.totalRounds}</span>
+                    <span class="score">Score: <span id="current-score">0</span></span>
+                </div>
+            </div>
+            
+            <div id="loading-screen" class="loading-screen">
+                <div class="spinner"></div>
+                <p>Loading MLB player data...</p>
+            </div>
+            
+            <div id="game-content" class="game-content" style="display: none;">
+                <div class="question">
+                    <h2>Who had the better stats in the last 7 days?</h2>
+                </div>
                 
-                <div id="loadingContainer" style="display: block;">
-                    <div style="padding: 40px;">
-                        <div style="font-size: 18px; margin-bottom: 10px;">🔄 Loading MLB data...</div>
-                        <div style="color: #666; font-size: 14px;">Preparing game with recent MLB stats</div>
-                        <div style="margin-top: 10px;">
-                            <div style="width: 100%; background: #f0f0f0; border-radius: 10px; height: 8px;">
-                                <div id="loadingBar" style="width: 0%; background: #007bff; height: 100%; border-radius: 10px; transition: width 0.3s;"></div>
+                <div class="players-container">
+                    <div class="player-card" id="player-1-card">
+                        <div class="player-info">
+                            <h3 id="player-1-name"></h3>
+                            <p id="player-1-team"></p>
+                        </div>
+                        <button class="choose-player-btn" onclick="selectPlayer(1)">Choose This Player</button>
+                    </div>
+                    
+                    <div class="vs-separator">VS</div>
+                    
+                    <div class="player-card" id="player-2-card">
+                        <div class="player-info">
+                            <h3 id="player-2-name"></h3>
+                            <p id="player-2-team"></p>
+                        </div>
+                        <button class="choose-player-btn" onclick="selectPlayer(2)">Choose This Player</button>
+                    </div>
+                </div>
+                
+                <div id="result-screen" class="result-screen" style="display: none;">
+                    <div class="result-content">
+                        <h3 id="result-title"></h3>
+                        <div class="stats-comparison">
+                            <div class="player-stats">
+                                <h4 id="result-player-1-name"></h4>
+                                <div id="result-player-1-stats"></div>
+                                <p class="player-score">Score: <span id="result-player-1-score"></span></p>
+                            </div>
+                            <div class="player-stats">
+                                <h4 id="result-player-2-name"></h4>
+                                <div id="result-player-2-stats"></div>
+                                <p class="player-score">Score: <span id="result-player-2-score"></span></p>
                             </div>
                         </div>
+                        <button id="next-round-btn" class="next-btn" onclick="nextRound()">Next Round</button>
                     </div>
                 </div>
+            </div>
+            
+            <div id="final-screen" class="final-screen" style="display: none;">
+                <div class="final-content">
+                    <h2>Game Complete!</h2>
+                    <div class="final-score">
+                        <h3>Final Score: <span id="final-score"></span> out of ${gameState.totalRounds}</h3>
+                        <p id="score-message"></p>
+                    </div>
+                    <div class="final-buttons">
+                        <button class="play-again-btn" onclick="playAgain()">Play Again</button>
+                        <button class="home-btn" onclick="goHome()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+            #better-week-game {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                font-family: 'Arial', sans-serif;
+            }
+            
+            .game-header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            
+            .game-header h1 {
+                margin: 0 0 15px 0;
+                color: #2c3e50;
+                font-size: 2.2em;
+            }
+            
+            .game-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: #f8f9fa;
+                padding: 15px 25px;
+                border-radius: 10px;
+                border: 2px solid #dee2e6;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            
+            .round-counter, .score {
+                font-weight: bold;
+                color: #495057;
+                font-size: 1.1em;
+            }
+            
+            .loading-screen {
+                text-align: center;
+                padding: 60px 20px;
+            }
+            
+            .spinner {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #007bff;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .question {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            
+            .question h2 {
+                color: #343a40;
+                font-size: 1.6em;
+                margin: 0;
+            }
+            
+            .players-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+            
+            .player-card {
+                flex: 1;
+                background: white;
+                border: 3px solid #dee2e6;
+                border-radius: 15px;
+                padding: 25px;
+                text-align: center;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            
+            .player-card:hover {
+                border-color: #007bff;
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0,123,255,0.15);
+            }
+            
+            .player-info h3 {
+                margin: 0 0 10px 0;
+                color: #2c3e50;
+                font-size: 1.4em;
+                font-weight: bold;
+            }
+            
+            .player-info p {
+                margin: 0 0 20px 0;
+                color: #6c757d;
+                font-size: 1.1em;
+            }
+            
+            .choose-player-btn {
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 1.1em;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background 0.3s ease;
+                width: 100%;
+            }
+            
+            .choose-player-btn:hover {
+                background: #0056b3;
+            }
+            
+            .vs-separator {
+                font-size: 2em;
+                font-weight: bold;
+                color: #dc3545;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+                flex-shrink: 0;
+            }
+            
+            .result-screen {
+                background: #f8f9fa;
+                border: 2px solid #dee2e6;
+                border-radius: 15px;
+                padding: 30px;
+                margin-top: 20px;
+            }
+            
+            .result-content h3 {
+                text-align: center;
+                margin: 0 0 25px 0;
+                font-size: 1.6em;
+            }
+            
+            .stats-comparison {
+                display: flex;
+                justify-content: space-between;
+                gap: 30px;
+                margin-bottom: 25px;
+            }
+            
+            .player-stats {
+                flex: 1;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                border: 2px solid #dee2e6;
+            }
+            
+            .player-stats h4 {
+                margin: 0 0 15px 0;
+                color: #2c3e50;
+                text-align: center;
+                font-size: 1.2em;
+            }
+            
+            .player-stats div {
+                margin-bottom: 15px;
+                line-height: 1.6;
+            }
+            
+            .player-score {
+                text-align: center;
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #007bff;
+                margin: 15px 0 0 0;
+            }
+            
+            .next-btn {
+                background: #28a745;
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 8px;
+                font-size: 1.2em;
+                font-weight: bold;
+                cursor: pointer;
+                display: block;
+                margin: 0 auto;
+                transition: background 0.3s ease;
+            }
+            
+            .next-btn:hover {
+                background: #1e7e34;
+            }
+            
+            .final-screen {
+                text-align: center;
+                background: #f8f9fa;
+                border: 2px solid #dee2e6;
+                border-radius: 15px;
+                padding: 40px;
+                margin-top: 20px;
+            }
+            
+            .final-content h2 {
+                color: #2c3e50;
+                margin: 0 0 25px 0;
+                font-size: 2em;
+            }
+            
+            .final-score h3 {
+                color: #007bff;
+                font-size: 1.8em;
+                margin: 0 0 15px 0;
+            }
+            
+            .final-score p {
+                font-size: 1.2em;
+                color: #6c757d;
+                margin: 0 0 30px 0;
+            }
+            
+            .final-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+            }
+            
+            .play-again-btn, .home-btn {
+                padding: 15px 30px;
+                border: none;
+                border-radius: 8px;
+                font-size: 1.1em;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .play-again-btn {
+                background: #007bff;
+                color: white;
+            }
+            
+            .play-again-btn:hover {
+                background: #0056b3;
+            }
+            
+            .home-btn {
+                background: #6c757d;
+                color: white;
+            }
+            
+            .home-btn:hover {
+                background: #545b62;
+            }
+            
+            @media (max-width: 768px) {
+                .players-container {
+                    flex-direction: column;
+                    gap: 15px;
+                }
                 
-                <div id="gameContent" style="display: none;">
-                    <div id="gameInfo" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                        <!-- Game details will be populated here -->
-                    </div>
-                    
-                    <div id="guessSection" style="margin-bottom: 20px;">
-                        <div style="position: relative; display: inline-block; width: 100%; max-width: 400px;">
-                            <input type="text" id="playerInput" placeholder="Search for a player..." 
-                                   style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;"
-                                   autocomplete="off">
-                            <div id="playerDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000;"></div>
-                        </div>
-                        <button onclick="makeGuess()" id="guessButton" style="margin-left: 10px; padding: 12px 24px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">Guess</button>
-                    </div>
-                    
-                    <div id="feedback" style="margin-bottom: 20px; min-height: 20px; font-weight: bold;"></div>
-                    
-                    <div id="guessList" style="margin-bottom: 20px;">
-                        <!-- Previous guesses will be displayed here -->
-                    </div>
-                    
-                    <div id="gameEndContainer" style="display: none;">
-                        <div id="revealSection" style="background: #e8f5e8; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                            <!-- Player reveal will be shown here -->
-                        </div>
-                        <button onclick="startNewGame()" style="padding: 12px 24px; font-size: 16px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer;">Play Again</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        initializeMLBGame();
-    }
-    
-    async function initializeMLBGame() {
-        isLoading = true;
-        updateLoadingProgress(10, "Loading active MLB players...");
-        
-        try {
-            // Load players data
-            await loadAllPlayers();
-            updateLoadingProgress(70, "Preparing game scenario...");
-            
-            // Create a realistic game scenario
-            await createGameScenario();
-            updateLoadingProgress(100, "Ready to play!");
-            
-            setTimeout(finishLoading, 500);
-            
-        } catch (error) {
-            console.error('Failed to initialize MLB game:', error);
-            showError('Failed to load MLB data. Please check your internet connection and try again.');
-        }
-    }
-    
-    function updateLoadingProgress(percent, message) {
-        const loadingBar = document.getElementById('loadingBar');
-        const loadingContainer = document.getElementById('loadingContainer');
-        
-        if (loadingBar) {
-            loadingBar.style.width = percent + '%';
-        }
-        
-        if (loadingContainer && message) {
-            const messageDiv = loadingContainer.querySelector('div');
-            if (messageDiv) {
-                messageDiv.innerHTML = `🔄 ${message}`;
-            }
-        }
-    }
-    
-    function finishLoading() {
-        document.getElementById('loadingContainer').style.display = 'none';
-        document.getElementById('gameContent').style.display = 'block';
-        
-        setupSearchableDropdown();
-        displayGameInfo();
-        isLoading = false;
-    }
-    
-    function showError(message) {
-        document.getElementById('game-container').innerHTML = `
-            <div style="text-align: center; max-width: 600px; margin: 0 auto;">
-                <h2>MLB Stat Shuffle</h2>
-                <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                    <h3>⚠️ Unable to Load Game</h3>
-                    <p>${message}</p>
-                    <div style="margin-top: 15px; font-size: 14px;">
-                        <p><strong>This may help:</strong></p>
-                        <ul style="text-align: left; display: inline-block;">
-                            <li>Check your internet connection</li>
-                            <li>Try refreshing the page</li>
-                            <li>Make sure JavaScript is enabled</li>
-                        </ul>
-                    </div>
-                    <button onclick="initializeMLBGame()" style="margin-top: 15px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Try Again</button>
-                </div>
-            </div>
-        `;
-    }
-    
-    async function loadAllPlayers() {
-        try {
-            // Use the MLB lookup service which allows cross-origin requests
-            const response = await fetch(`${MLB_LOOKUP_BASE}.search_player_all.bam?sport_code='mlb'&active_sw='Y'&name_part='a%25'`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch player data');
-            }
-            
-            const data = await response.json();
-            const searchResults = data.search_player_all.queryResults;
-            
-            if (!searchResults || !searchResults.row) {
-                throw new Error('No player data available');
-            }
-            
-            // Convert single result to array if needed
-            const players = Array.isArray(searchResults.row) ? searchResults.row : [searchResults.row];
-            
-            // Get additional players with different search terms
-            const searchTerms = ['b%25', 'c%25', 'd%25', 'e%25', 'f%25', 'g%25', 'h%25', 'i%25', 'j%25', 'k%25', 'l%25', 'm%25'];
-            
-            for (const term of searchTerms.slice(0, 5)) { // Limit to avoid too many requests
-                try {
-                    const searchResponse = await fetch(`${MLB_LOOKUP_BASE}.search_player_all.bam?sport_code='mlb'&active_sw='Y'&name_part='${term}'`);
-                    if (searchResponse.ok) {
-                        const searchData = await searchResponse.json();
-                        const results = searchData.search_player_all.queryResults;
-                        if (results && results.row) {
-                            const additionalPlayers = Array.isArray(results.row) ? results.row : [results.row];
-                            players.push(...additionalPlayers);
-                        }
-                    }
-                } catch (error) {
-                    console.warn(`Failed to load players for term ${term}:`, error);
+                .vs-separator {
+                    font-size: 1.5em;
+                }
+                
+                .stats-comparison {
+                    flex-direction: column;
+                    gap: 20px;
+                }
+                
+                .game-info {
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                
+                .final-buttons {
+                    flex-direction: column;
+                    align-items: center;
                 }
             }
-            
-            // Filter for position players and format data
-            allPlayers = players
-                .filter(player => player.position && player.position !== 'P' && player.position !== 'Pitcher')
-                .map(player => ({
-                    id: player.player_id,
-                    fullName: player.name_display_first_last,
-                    firstName: player.name_first,
-                    lastName: player.name_last,
-                    primaryPosition: player.position,
-                    team: player.team_full || player.team_abbrev,
-                    teamId: player.team_id,
-                    birthCountry: player.birth_country || 'USA'
-                }));
-            
-            // Remove duplicates by player ID
-            const uniquePlayerMap = new Map();
-            allPlayers.forEach(player => {
-                if (!uniquePlayerMap.has(player.id)) {
-                    uniquePlayerMap.set(player.id, player);
+        </style>
+    `;
+}
+
+async function initializeGame() {
+    gameState.isLoading = true;
+    showLoading(true);
+    
+    try {
+        await loadPlayerData();
+        setupNewRound();
+        showLoading(false);
+    } catch (error) {
+        console.error('Error initializing game:', error);
+        showError('Failed to load player data. Please try again.');
+    }
+}
+
+function showLoading(show) {
+    document.getElementById('loading-screen').style.display = show ? 'block' : 'none';
+    document.getElementById('game-content').style.display = show ? 'none' : 'block';
+}
+
+function showError(message) {
+    document.getElementById('game-container').innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <h2>Oops! Something went wrong</h2>
+            <p>${message}</p>
+            <button onclick="initializeGame()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 10px;">
+                Try Again
+            </button>
+            <button onclick="goHome()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 10px;">
+                Back to Home
+            </button>
+        </div>
+    `;
+}
+
+async function loadPlayerData() {
+    try {
+        // Get all MLB teams
+        const teamsResponse = await fetch('http://lookup-service-prod.mlb.com/json/named.team_all_season.bam?sport_id=1&all_star_sw=%27N%27&sort_order=name_asc&season=2025');
+        const teamsData = await teamsResponse.json();
+        
+        if (!teamsData.team_all_season?.queryResults?.row) {
+            throw new Error('No teams data available');
+        }
+        
+        const teams = Array.isArray(teamsData.team_all_season.queryResults.row) 
+            ? teamsData.team_all_season.queryResults.row 
+            : [teamsData.team_all_season.queryResults.row];
+        
+        // Get players from a subset of teams (to avoid API limits)
+        const selectedTeams = teams.slice(0, 15); // Limit to 15 teams for performance
+        const allPlayers = [];
+        
+        for (const team of selectedTeams) {
+            try {
+                const playersResponse = await fetch(
+                    `http://lookup-service-prod.mlb.com/json/named.roster_40.bam?team_id=${team.team_id}`
+                );
+                const playersData = await playersResponse.json();
+                
+                if (playersData.roster_40?.queryResults?.row) {
+                    const teamPlayers = Array.isArray(playersData.roster_40.queryResults.row)
+                        ? playersData.roster_40.queryResults.row
+                        : [playersData.roster_40.queryResults.row];
+                    
+                    // Filter to position players only (not pitchers)
+                    const positionPlayers = teamPlayers.filter(player => 
+                        player.position_txt && !player.position_txt.includes('P')
+                    );
+                    
+                    // Add team info to each player
+                    positionPlayers.forEach(player => {
+                        player.team_name = team.name_display_full;
+                        player.team_abbrev = team.name_abbrev;
+                    });
+                    
+                    allPlayers.push(...positionPlayers);
                 }
-            });
-            allPlayers = Array.from(uniquePlayerMap.values());
-            
-            console.log(`Loaded ${allPlayers.length} active position players`);
-            
-        } catch (error) {
-            console.error('Failed to load players:', error);
-            throw error;
-        }
-    }
-    
-    async function createGameScenario() {
-        try {
-            if (allPlayers.length === 0) {
-                throw new Error('No players available');
+            } catch (error) {
+                console.warn(`Failed to load players for team ${team.name_display_full}:`, error);
             }
-            
-            // Select a random player
-            const randomPlayer = allPlayers[Math.floor(Math.random() * allPlayers.length)];
-            
-            // Create realistic game scenarios based on different performance types
-            const scenarios = [
-                {
-                    type: 'power_game',
-                    statlines: ['2-for-4, 2 HR, 4 RBI', '1-for-3, 1 HR, 3 RBI', '3-for-5, 1 HR, 2 RBI'],
-                    description: 'Power hitting performance'
-                },
-                {
-                    type: 'contact_game', 
-                    statlines: ['3-for-4, 2 RBI', '4-for-5, 1 RBI', '2-for-3, 3 RBI'],
-                    description: 'Contact hitting performance'
-                },
-                {
-                    type: 'speed_game',
-                    statlines: ['2-for-4, 2 SB', '1-for-2, 1 SB, 2 R', '3-for-4, 1 SB, 1 RBI'],
-                    description: 'Speed and baserunning'
-                },
-                {
-                    type: 'clutch_game',
-                    statlines: ['1-for-4, 3 RBI', '2-for-5, 4 RBI', '0-for-3, 2 RBI'],
-                    description: 'Clutch hitting performance'
-                }
-            ];
-            
-            const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-            const randomStatline = randomScenario.statlines[Math.floor(Math.random() * randomScenario.statlines.length)];
-            
-            // Generate realistic game details
-            const dates = generateRecentDates();
-            const randomDate = dates[Math.floor(Math.random() * dates.length)];
-            const matchup = generateRealisticMatchup(randomPlayer.team);
-            
-            currentGame = {
-                date: randomDate,
-                homeTeam: matchup.homeTeam,
-                awayTeam: matchup.awayTeam,
-                player: {
-                    id: randomPlayer.id,
-                    fullName: randomPlayer.fullName,
-                    team: randomPlayer.team,
-                    position: randomPlayer.primaryPosition,
-                    birthCountry: randomPlayer.birthCountry
-                },
-                statline: randomStatline,
-                scenario: randomScenario.description
-            };
-            
-            console.log('Created game scenario:', currentGame);
-            
-        } catch (error) {
-            console.error('Failed to create game scenario:', error);
-            throw error;
-        }
-    }
-    
-    function generateRecentDates() {
-        const dates = [];
-        const now = new Date();
-        
-        // Generate dates from the past 6 months (simulating 2025 season)
-        for (let i = 0; i < 30; i++) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - Math.floor(Math.random() * 180));
-            dates.push(date.toISOString().split('T')[0]);
         }
         
-        return dates;
+        if (allPlayers.length < 10) {
+            throw new Error('Not enough player data available');
+        }
+        
+        // Generate realistic stats for players
+        gameState.players = allPlayers.map(player => ({
+            id: player.player_id,
+            name: `${player.name_first} ${player.name_last}`,
+            team: player.team_name,
+            teamAbbrev: player.team_abbrev,
+            position: player.position_txt,
+            stats: generateRealisticStats()
+        }));
+        
+        console.log(`Loaded ${gameState.players.length} players`);
+        
+    } catch (error) {
+        console.error('Error loading player data:', error);
+        throw error;
+    }
+}
+
+function generateRealisticStats() {
+    // Generate realistic 7-day stats
+    const atBats = Math.floor(Math.random() * 25) + 10; // 10-35 at bats
+    const hits = Math.floor(Math.random() * Math.min(atBats, 15)); // 0 to min(atBats, 15) hits
+    const homeRuns = Math.random() < 0.3 ? Math.floor(Math.random() * 4) : 0; // 0-3 HRs, 30% chance
+    const rbis = Math.floor(Math.random() * 8); // 0-7 RBIs
+    const stolenBases = Math.random() < 0.2 ? Math.floor(Math.random() * 3) : 0; // 0-2 SBs, 20% chance
+    
+    return {
+        atBats,
+        hits,
+        homeRuns,
+        rbis,
+        stolenBases,
+        battingAverage: atBats > 0 ? (hits / atBats).toFixed(3) : '.000'
+    };
+}
+
+function calculatePlayerScore(stats) {
+    return (stats.hits * 1) + (stats.homeRuns * 4) + (stats.rbis * 2) + (stats.stolenBases * 2);
+}
+
+function setupNewRound() {
+    if (gameState.currentRound > gameState.totalRounds) {
+        showFinalScreen();
+        return;
     }
     
-    function generateRealisticMatchup(playerTeam) {
-        const mlbTeams = [
-            'New York Yankees', 'Boston Red Sox', 'Toronto Blue Jays', 'Baltimore Orioles', 'Tampa Bay Rays',
-            'Chicago White Sox', 'Cleveland Guardians', 'Detroit Tigers', 'Kansas City Royals', 'Minnesota Twins',
-            'Houston Astros', 'Los Angeles Angels', 'Oakland Athletics', 'Seattle Mariners', 'Texas Rangers',
-            'Atlanta Braves', 'Miami Marlins', 'New York Mets', 'Philadelphia Phillies', 'Washington Nationals',
-            'Chicago Cubs', 'Cincinnati Reds', 'Milwaukee Brewers', 'Pittsburgh Pirates', 'St. Louis Cardinals',
-            'Arizona Diamondbacks', 'Colorado Rockies', 'Los Angeles Dodgers', 'San Diego Padres', 'San Francisco Giants'
-        ];
-        
-        // Filter out the player's team
-        const otherTeams = mlbTeams.filter(team => team !== playerTeam);
-        const opponent = otherTeams[Math.floor(Math.random() * otherTeams.length)];
-        
-        // Randomly decide home/away
-        const isHome = Math.random() > 0.5;
-        
-        return {
-            homeTeam: isHome ? playerTeam : opponent,
-            awayTeam: isHome ? opponent : playerTeam
-        };
-    }
+    // Update UI
+    document.getElementById('current-round').textContent = gameState.currentRound;
+    document.getElementById('current-score').textContent = gameState.score;
     
-    function displayGameInfo() {
-        if (!currentGame) return;
-        
-        const gameDate = new Date(currentGame.date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        
-        document.getElementById('gameInfo').innerHTML = `
-            <h3>🔍 Guess This Player</h3>
-            <div style="font-size: 18px; font-weight: bold; margin: 10px 0; color: #007bff;">
-                ${currentGame.statline}
-            </div>
-            <div style="color: #666; margin-bottom: 10px;">
-                ${gameDate}: ${currentGame.awayTeam} @ ${currentGame.homeTeam}
-            </div>
-            <div style="font-size: 14px; color: #888;">
-                Guesses remaining: <span id="guessesRemaining">${maxGuesses}</span>
-            </div>
-        `;
-    }
-    
-    function setupSearchableDropdown() {
-        const input = document.getElementById('playerInput');
-        const dropdown = document.getElementById('playerDropdown');
-        
-        input.addEventListener('input', function() {
-            const query = this.value.toLowerCase().trim();
-            
-            if (query.length < 2) {
-                dropdown.style.display = 'none';
-                return;
-            }
-            
-            const matches = allPlayers.filter(player => 
-                player.fullName.toLowerCase().includes(query) ||
-                player.team.toLowerCase().includes(query) ||
-                player.primaryPosition.toLowerCase().includes(query)
-            ).slice(0, 10);
-            
-            if (matches.length > 0) {
-                dropdown.innerHTML = matches.map(player => 
-                    `<div onclick="selectPlayer('${player.fullName}')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">
-                        <strong>${player.fullName}</strong> - ${player.team} (${player.primaryPosition})
-                    </div>`
-                ).join('');
-                dropdown.style.display = 'block';
-            } else {
-                dropdown.style.display = 'none';
-            }
-        });
-        
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                makeGuess();
-            }
-        });
-        
-        // Hide dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.style.display = 'none';
-            }
-        });
-    }
-    
-    window.selectPlayer = function(playerName) {
-        document.getElementById('playerInput').value = playerName;
-        document.getElementById('playerDropdown').style.display = 'none';
+    // Select two random players
+    const shuffled = [...gameState.players].sort(() => 0.5 - Math.random());
+    gameState.currentMatchup = {
+        player1: shuffled[0],
+        player2: shuffled[1],
+        player1Score: calculatePlayerScore(shuffled[0].stats),
+        player2Score: calculatePlayerScore(shuffled[1].stats)
     };
     
-    function makeGuess() {
-        if (gameOver || isLoading) return;
-        
-        const playerName = document.getElementById('playerInput').value.trim();
-        if (!playerName) return;
-        
-        const guessedPlayer = allPlayers.find(p => 
-            p.fullName.toLowerCase() === playerName.toLowerCase()
-        );
-        
-        if (!guessedPlayer) {
-            showFeedback('❌ Player not found. Please select from the dropdown.', 'error');
-            return;
-        }
-        
-        if (guesses.some(g => g.player.id === guessedPlayer.id)) {
-            showFeedback('❌ You already guessed this player!', 'error');
-            return;
-        }
-        
-        const isCorrect = guessedPlayer.id === currentGame.player.id;
-        
-        const feedback = {
-            team: guessedPlayer.team === currentGame.player.team,
-            position: guessedPlayer.primaryPosition === currentGame.player.position,
-            nationality: guessedPlayer.birthCountry === currentGame.player.birthCountry
-        };
-        
-        guesses.push({
-            player: guessedPlayer,
-            feedback: feedback,
-            correct: isCorrect
-        });
-        
-        displayGuesses();
-        
-        if (isCorrect) {
-            gameWon = true;
-            gameOver = true;
-            showFeedback('🎉 Correct! Great job!', 'success');
-            endGame();
-        } else if (guesses.length >= maxGuesses) {
-            gameOver = true;
-            showFeedback(`❌ Out of guesses! The answer was ${currentGame.player.fullName}`, 'error');
-            endGame();
-        } else {
-            const remaining = maxGuesses - guesses.length;
-            showFeedback(`❌ Incorrect. ${remaining} guess${remaining !== 1 ? 'es' : ''} remaining.`, 'error');
-            document.getElementById('guessesRemaining').textContent = remaining;
-        }
-        
-        document.getElementById('playerInput').value = '';
-        document.getElementById('playerDropdown').style.display = 'none';
+    // Display players
+    document.getElementById('player-1-name').textContent = gameState.currentMatchup.player1.name;
+    document.getElementById('player-1-team').textContent = `${gameState.currentMatchup.player1.team} (${gameState.currentMatchup.player1.position})`;
+    
+    document.getElementById('player-2-name').textContent = gameState.currentMatchup.player2.name;
+    document.getElementById('player-2-team').textContent = `${gameState.currentMatchup.player2.team} (${gameState.currentMatchup.player2.position})`;
+    
+    // Hide result screen
+    document.getElementById('result-screen').style.display = 'none';
+    
+    // Show player cards
+    document.querySelectorAll('.player-card').forEach(card => {
+        card.style.display = 'block';
+    });
+    document.querySelector('.question').style.display = 'block';
+}
+
+function selectPlayer(playerNumber) {
+    const { player1, player2, player1Score, player2Score } = gameState.currentMatchup;
+    const selectedPlayer = playerNumber === 1 ? player1 : player2;
+    const otherPlayer = playerNumber === 1 ? player2 : player1;
+    const selectedScore = playerNumber === 1 ? player1Score : player2Score;
+    const otherScore = playerNumber === 1 ? player2Score : player1Score;
+    
+    const isCorrect = selectedScore >= otherScore;
+    
+    if (isCorrect) {
+        gameState.score++;
     }
     
-    function displayGuesses() {
-        const guessList = document.getElementById('guessList');
-        
-        if (guesses.length === 0) {
-            guessList.innerHTML = '';
-            return;
-        }
-        
-        guessList.innerHTML = `
-            <h4>Your Guesses:</h4>
-            <div style="display: grid; gap: 10px;">
-                ${guesses.map((guess, index) => `
-                    <div style="background: ${guess.correct ? '#d4edda' : '#f8f9fa'}; padding: 12px; border-radius: 8px; border-left: 4px solid ${guess.correct ? '#28a745' : '#6c757d'};">
-                        <div style="font-weight: bold; margin-bottom: 5px;">
-                            ${index + 1}. ${guess.player.fullName}
-                        </div>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <span style="background: ${guess.feedback.team ? '#28a745' : '#dc3545'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
-                                Team: ${guess.feedback.team ? '✅' : '❌'}
-                            </span>
-                            <span style="background: ${guess.feedback.position ? '#28a745' : '#dc3545'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
-                                Position: ${guess.feedback.position ? '✅' : '❌'}
-                            </span>
-                            <span style="background: ${guess.feedback.nationality ? '#28a745' : '#dc3545'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
-                                Nationality: ${guess.feedback.nationality ? '✅' : '❌'}
-                            </span>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+    showResult(selectedPlayer, otherPlayer, selectedScore, otherScore, isCorrect);
+}
+
+function showResult(selectedPlayer, otherPlayer, selectedScore, otherScore, isCorrect) {
+    // Hide player selection
+    document.querySelectorAll('.player-card').forEach(card => {
+        card.style.display = 'none';
+    });
+    document.querySelector('.question').style.display = 'none';
+    
+    // Show result
+    document.getElementById('result-screen').style.display = 'block';
+    
+    const resultTitle = isCorrect ? '🎉 Correct!' : '❌ Incorrect';
+    document.getElementById('result-title').textContent = resultTitle;
+    document.getElementById('result-title').style.color = isCorrect ? '#28a745' : '#dc3545';
+    
+    // Player 1 stats
+    document.getElementById('result-player-1-name').textContent = gameState.currentMatchup.player1.name;
+    document.getElementById('result-player-1-stats').innerHTML = formatStats(gameState.currentMatchup.player1.stats);
+    document.getElementById('result-player-1-score').textContent = gameState.currentMatchup.player1Score;
+    
+    // Player 2 stats
+    document.getElementById('result-player-2-name').textContent = gameState.currentMatchup.player2.name;
+    document.getElementById('result-player-2-stats').innerHTML = formatStats(gameState.currentMatchup.player2.stats);
+    document.getElementById('result-player-2-score').textContent = gameState.currentMatchup.player2Score;
+    
+    // Highlight winner
+    const player1Stats = document.querySelector('.player-stats:first-child');
+    const player2Stats = document.querySelector('.player-stats:last-child');
+    
+    if (gameState.currentMatchup.player1Score > gameState.currentMatchup.player2Score) {
+        player1Stats.style.borderColor = '#28a745';
+        player1Stats.style.background = '#f8fff9';
+    } else if (gameState.currentMatchup.player2Score > gameState.currentMatchup.player1Score) {
+        player2Stats.style.borderColor = '#28a745';
+        player2Stats.style.background = '#f8fff9';
     }
     
-    function showFeedback(message, type) {
-        const feedback = document.getElementById('feedback');
-        feedback.textContent = message;
-        feedback.style.color = type === 'success' ? '#28a745' : '#dc3545';
-        
-        setTimeout(() => {
-            if (feedback.textContent === message) {
-                feedback.textContent = '';
-            }
-        }, 3000);
+    // Update score display
+    document.getElementById('current-score').textContent = gameState.score;
+    
+    // Update button text for final round
+    const nextBtn = document.getElementById('next-round-btn');
+    if (gameState.currentRound >= gameState.totalRounds) {
+        nextBtn.textContent = 'View Final Score';
+    } else {
+        nextBtn.textContent = 'Next Round';
+    }
+}
+
+function formatStats(stats) {
+    return `
+        <strong>Batting Average:</strong> ${stats.battingAverage}<br>
+        <strong>At Bats:</strong> ${stats.atBats}<br>
+        <strong>Hits:</strong> ${stats.hits}<br>
+        <strong>Home Runs:</strong> ${stats.homeRuns}<br>
+        <strong>RBIs:</strong> ${stats.rbis}<br>
+        <strong>Stolen Bases:</strong> ${stats.stolenBases}
+    `;
+}
+
+function nextRound() {
+    gameState.currentRound++;
+    setupNewRound();
+}
+
+function showFinalScreen() {
+    document.getElementById('game-content').style.display = 'none';
+    document.getElementById('final-screen').style.display = 'block';
+    
+    document.getElementById('final-score').textContent = gameState.score;
+    
+    let message = '';
+    const percentage = (gameState.score / gameState.totalRounds) * 100;
+    
+    if (percentage >= 80) {
+        message = '🏆 Outstanding! You really know your baseball stats!';
+    } else if (percentage >= 60) {
+        message = '⚾ Great job! You have a good eye for player performance.';
+    } else if (percentage >= 40) {
+        message = '👍 Not bad! Keep practicing to improve your baseball knowledge.';
+    } else {
+        message = '📚 Keep studying those stats! Baseball is full of surprises.';
     }
     
-    function endGame() {
-        document.getElementById('guessSection').style.display = 'none';
-        document.getElementById('gameEndContainer').style.display = 'block';
-        
-        const revealSection = document.getElementById('revealSection');
-        revealSection.innerHTML = `
-            <h3>${gameWon ? '🎉 Congratulations!' : '😔 Game Over'}</h3>
-            <div style="margin: 15px 0;">
-                <strong>Answer: ${currentGame.player.fullName}</strong>
-            </div>
-            <div style="color: #666; margin-bottom: 10px;">
-                Team: ${currentGame.player.team}<br>
-                Position: ${currentGame.player.position}<br>
-                Nationality: ${currentGame.player.birthCountry}
-            </div>
-            <div style="font-size: 16px; font-weight: bold; color: #007bff;">
-                Final Statline: ${currentGame.statline}
-            </div>
-            <div style="margin-top: 10px; color: #666;">
-                Game: ${currentGame.awayTeam} @ ${currentGame.homeTeam}
-            </div>
-        `;
-    }
+    document.getElementById('score-message').textContent = message;
+}
+
+function playAgain() {
+    // Reset game state
+    gameState = {
+        players: gameState.players, // Keep the loaded players
+        currentRound: 1,
+        totalRounds: 5,
+        score: 0,
+        currentMatchup: null,
+        isLoading: false
+    };
     
-    function startNewGame() {
-        guesses = [];
-        gameOver = false;
-        gameWon = false;
-        currentGame = null;
-        
-        document.getElementById('guessSection').style.display = 'block';
-        document.getElementById('gameEndContainer').style.display = 'none';
-        document.getElementById('guessList').innerHTML = '';
-        document.getElementById('feedback').textContent = '';
-        document.getElementById('playerInput').value = '';
-        
-        // Create new game scenario
-        initializeMLBGame();
-    }
+    // Show game content and hide final screen
+    document.getElementById('final-screen').style.display = 'none';
+    document.getElementById('game-content').style.display = 'block';
     
-    // Global functions
-    window.makeGuess = makeGuess;
-    window.startNewGame = startNewGame;
-    
-})(); 
+    // Start new game
+    setupNewRound();
+}
+
+function goHome() {
+    window.location.hash = '';
+} 
