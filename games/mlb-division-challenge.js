@@ -194,9 +194,10 @@ class MLBDivisionGame {
 
         if (data.records && data.records.length > 0) {
             data.records.forEach(division => {
+                console.log(`🔍 DIVISION: Found record with teamRecords=${!!division.teamRecords}, division=${!!division.division}`);
                 if (division.teamRecords && division.division) {
                     const divisionName = division.division.name;
-                    console.log(`Processing division: ${divisionName}`);
+                    console.log(`🏟️ DIVISION: Processing division: "${divisionName}" (${division.teamRecords.length} teams)`);
                     
                     division.teamRecords.forEach((team, index) => {
                         const leagueAbbr = this.teamLeagueMap[team.team.name] || 'Unknown';
@@ -224,19 +225,19 @@ class MLBDivisionGame {
                         if (leagueAbbr !== 'Unknown') {
                             // Map API division names to our division keys
                             let divisionKey = null;
-                            if (divisionName.includes('American League East')) divisionKey = 'AL East';
-                            else if (divisionName.includes('American League Central')) divisionKey = 'AL Central';
-                            else if (divisionName.includes('American League West')) divisionKey = 'AL West';
-                            else if (divisionName.includes('National League East')) divisionKey = 'NL East';
-                            else if (divisionName.includes('National League Central')) divisionKey = 'NL Central';
-                            else if (divisionName.includes('National League West')) divisionKey = 'NL West';
+                            if (divisionName && divisionName.includes('American League East')) divisionKey = 'AL East';
+                            else if (divisionName && divisionName.includes('American League Central')) divisionKey = 'AL Central';
+                            else if (divisionName && divisionName.includes('American League West')) divisionKey = 'AL West';
+                            else if (divisionName && divisionName.includes('National League East')) divisionKey = 'NL East';
+                            else if (divisionName && divisionName.includes('National League Central')) divisionKey = 'NL Central';
+                            else if (divisionName && divisionName.includes('National League West')) divisionKey = 'NL West';
                             
                             if (divisionKey && this.divisions[divisionKey]) {
                                 this.divisions[divisionKey].push(teamData);
                                 this.allTeams.push(teamData);
                                 console.log(`✅ Added ${teamData.name} to ${divisionKey} (Rank ${teamData.divisionRank})`);
                             } else {
-                                console.warn(`⚠️ Could not map division: ${divisionName}`);
+                                console.warn(`⚠️ DIVISION: Could not map division: "${divisionName}" for team ${teamData.name}`);
                             }
                         }
                     });
