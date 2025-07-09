@@ -194,7 +194,13 @@ class MLBDivisionGame {
 
         if (data.records && data.records.length > 0) {
             data.records.forEach(division => {
-                console.log(`🔍 DIVISION: Found record with teamRecords=${!!division.teamRecords}, division=${!!division.division}`);
+                console.log(`🔍 DIVISION: Found record:`, {
+                    hasTeamRecords: !!division.teamRecords,
+                    hasDivision: !!division.division,
+                    divisionObject: division.division,
+                    standingsType: division.standingsType,
+                    teamCount: division.teamRecords ? division.teamRecords.length : 0
+                });
                 if (division.teamRecords && division.division) {
                     const divisionName = division.division.name;
                     console.log(`🏟️ DIVISION: Processing division: "${divisionName}" (${division.teamRecords.length} teams)`);
