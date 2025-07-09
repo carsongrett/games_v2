@@ -139,12 +139,14 @@ class MLBDivisionGame {
             // Parse the standings data by divisions
             this.parseStandingsDataByDivisions(data);
             
-            // Check if we got meaningful data
+            // Check if we got meaningful data (use same logic as standings challenge)
             const hasGamesPlayed = this.allTeams.some(team => team.wins > 0 || team.losses > 0);
             const totalTeamsFound = Object.values(this.divisions).reduce((sum, div) => sum + div.length, 0);
             
+            // Use identical success criteria as standings challenge
+            console.log(`🔍 DIVISION: totalTeamsFound=${totalTeamsFound}, hasGamesPlayed=${hasGamesPlayed}, currentSeason=${this.currentSeason}`);
             if (totalTeamsFound >= 28 && hasGamesPlayed) {
-                console.log(`Successfully loaded ${totalTeamsFound} teams across all divisions for ${this.currentSeason} season`);
+                console.log(`✅ DIVISION: Successfully loaded ${totalTeamsFound} teams across all divisions for ${this.currentSeason} season`);
                 this.showMessage(`Loaded ${this.currentSeason} MLB division standings successfully!`, 'success');
                 setTimeout(() => this.hideMessage(), 2000);
             } else if (!hasGamesPlayed && this.currentSeason >= 2025) {
@@ -163,7 +165,7 @@ class MLBDivisionGame {
                 
                 const totalTeams2024 = Object.values(this.divisions).reduce((sum, div) => sum + div.length, 0);
                 if (totalTeams2024 >= 28) {
-                    console.log(`Successfully loaded 2024 division standings as fallback`);
+                    console.log(`✅ DIVISION: Successfully loaded 2024 division standings as fallback (${totalTeams2024} teams)`);
                     this.showMessage(`Loaded 2024 MLB division standings (${this.currentSeason} season hasn't started yet)`, 'success');
                     setTimeout(() => this.hideMessage(), 3000);
                 } else {
@@ -174,7 +176,7 @@ class MLBDivisionGame {
             }
             
         } catch (error) {
-            console.error('Error loading standings data:', error);
+            console.error('🚨 DIVISION: Error loading standings data:', error);
             this.showMessage(`Unable to load standings data from API. Using sample data for demo.`, 'error');
             this.loadSampleData();
             setTimeout(() => this.hideMessage(), 3000);

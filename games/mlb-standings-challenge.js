@@ -125,8 +125,9 @@ class MLBStandingsGame {
             // Check if we got meaningful data (not all 0-0 records indicating season hasn't started)
             const hasGamesPlayed = this.allTeams.some(team => team.wins > 0 || team.losses > 0);
             
+            console.log(`🔍 STANDINGS: alTeams=${this.alStandings.length}, nlTeams=${this.nlStandings.length}, hasGamesPlayed=${hasGamesPlayed}, currentSeason=${this.currentSeason}`);
             if (this.alStandings.length > 0 && this.nlStandings.length > 0 && hasGamesPlayed) {
-                console.log(`Successfully loaded ${this.alStandings.length} AL teams and ${this.nlStandings.length} NL teams for ${this.currentSeason} season`);
+                console.log(`✅ STANDINGS: Successfully loaded ${this.alStandings.length} AL teams and ${this.nlStandings.length} NL teams for ${this.currentSeason} season`);
                 this.showMessage(`Loaded ${this.currentSeason} MLB standings successfully!`, 'success');
                 setTimeout(() => this.hideMessage(), 2000);
             } else if (!hasGamesPlayed && this.currentSeason >= 2025) {
@@ -144,7 +145,7 @@ class MLBStandingsGame {
                 this.parseStandingsData(data);
                 
                 if (this.alStandings.length > 0 && this.nlStandings.length > 0) {
-                    console.log(`Successfully loaded 2024 standings as fallback`);
+                    console.log(`✅ STANDINGS: Successfully loaded 2024 standings as fallback (AL: ${this.alStandings.length}, NL: ${this.nlStandings.length})`);
                     this.showMessage(`Loaded 2024 MLB standings (${this.currentSeason} season hasn't started yet)`, 'success');
                     setTimeout(() => this.hideMessage(), 3000);
                 } else {
@@ -155,7 +156,7 @@ class MLBStandingsGame {
             }
             
         } catch (error) {
-            console.error('Error loading standings data:', error);
+            console.error('🚨 STANDINGS: Error loading standings data:', error);
             this.showMessage(`Unable to load standings data from API. Using sample data for demo.`, 'error');
             this.loadSampleData();
             setTimeout(() => this.hideMessage(), 3000);
