@@ -281,4 +281,53 @@ footer {
         font-size: 12px;
         padding: 6px 8px;
     }
+}
+
+/* MLB Division Challenge Styles */
+.division-standings {
+    border: 2px solid #000;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    min-height: 200px;
+}
+
+.division-header {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.division-header h3 {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #000;
+    margin: 0;
+}
+
+/* Responsive design for MLB division challenge */
+@media (max-width: 768px) {
+    #mlb-division-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+    }
+    
+    .division-standings {
+        padding: 12px;
+        min-height: 180px;
+    }
+    
+    .division-header h3 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .division-standings {
+        padding: 10px;
+        min-height: 160px;
+    }
+    
+    .division-header h3 {
+        font-size: 1rem;
+    }
 } 
