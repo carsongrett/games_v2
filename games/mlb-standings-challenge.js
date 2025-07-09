@@ -82,7 +82,10 @@ class MLBStandingsGame {
             "Minnesota Twins": "AL",
             "New York Mets": "NL",
             "New York Yankees": "AL",
+            // Multiple Athletics mappings to handle API naming variations
             "Oakland Athletics": "AL",
+            "Las Vegas Athletics": "AL",
+            "Athletics": "AL",
             "Philadelphia Phillies": "NL",
             "Pittsburgh Pirates": "NL",
             "San Diego Padres": "NL",
@@ -175,6 +178,11 @@ class MLBStandingsGame {
                         const leagueAbbr = this.teamLeagueMap[team.team.name] || 'Unknown';
                         const leagueFull = leagueAbbr === 'AL' ? 'American League' : leagueAbbr === 'NL' ? 'National League' : 'Unknown';
                         
+                        // Log warning for unmapped teams
+                        if (leagueAbbr === 'Unknown') {
+                            console.warn(`⚠️ Unknown team name from API: "${team.team.name}" (ID: ${team.team.id})`);
+                        }
+                        
                         const teamData = {
                             id: team.team.id,
                             name: team.team.name,
@@ -189,8 +197,11 @@ class MLBStandingsGame {
                             correctGuess: null
                         };
 
-                        allTeamsTemp.push(teamData);
-                        console.log('Found team:', teamData.name, 'League:', teamData.leagueAbbr, 'Record:', teamData.wins + '-' + teamData.losses);
+                        // Only add teams we can properly map to a league
+                        if (leagueAbbr !== 'Unknown') {
+                            allTeamsTemp.push(teamData);
+                            console.log('✅ Found team:', teamData.name, 'League:', teamData.leagueAbbr, 'Record:', teamData.wins + '-' + teamData.losses);
+                        }
                     });
                 }
             });
