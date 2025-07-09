@@ -198,20 +198,19 @@
         
         // Sort players alphabetically but keep original indices
         const sortedPlayers = playersData
-            .map((player, originalIndex) => ({ player, originalIndex }))
+            .map((player, index) => ({ player, originalIndex: index }))
             .sort((a, b) => a.player.Player.localeCompare(b.player.Player));
         
-        // Input event for filtering
         input.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
             
-            if (searchTerm.length === 0) {
+            if (searchTerm === '') {
+                filteredPlayers = [];
                 hideDropdown();
                 clearSelection();
                 return;
             }
             
-            // Filter players based on name, team, or position
             filteredPlayers = sortedPlayers.filter(({ player }) => 
                 player.Player.toLowerCase().includes(searchTerm) ||
                 player.Team.toLowerCase().includes(searchTerm) ||
@@ -222,41 +221,32 @@
             showFilteredResults();
         });
         
-        // Focus event
-        input.addEventListener('focus', function() {
-            if (this.value.length > 0) {
-                showFilteredResults();
-            }
-        });
-        
-        // Keyboard navigation
         input.addEventListener('keydown', function(e) {
-            if (filteredPlayers.length === 0) return;
-            
-            switch(e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    highlightedIndex = Math.min(highlightedIndex + 1, filteredPlayers.length - 1);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (highlightedIndex < filteredPlayers.length - 1) {
+                    highlightedIndex++;
                     updateHighlight();
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (highlightedIndex > 0) {
+                    highlightedIndex--;
                     updateHighlight();
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    if (highlightedIndex >= 0) {
-                        selectPlayer(filteredPlayers[highlightedIndex]);
-                    }
-                    break;
-                case 'Escape':
-                    hideDropdown();
-                    break;
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlightedIndex >= 0 && highlightedIndex < filteredPlayers.length) {
+                    const selectedData = filteredPlayers[highlightedIndex];
+                    selectPlayer(selectedData);
+                }
+            } else if (e.key === 'Escape') {
+                hideDropdown();
+                clearSelection();
             }
         });
         
-        // Click outside to close
+        // Hide dropdown when clicking outside
         document.addEventListener('click', function(e) {
             if (!input.contains(e.target) && !dropdown.contains(e.target)) {
                 hideDropdown();
@@ -310,17 +300,14 @@
     }
     
     function selectPlayer({ player, originalIndex }) {
-        const input = document.getElementById('playerInput');
-        
-        input.value = player.Player;
         selectedPlayerIndex = originalIndex;
+        document.getElementById('playerInput').value = player.Player;
         hideDropdown();
         updateGuessButton();
     }
     
     function hideDropdown() {
         document.getElementById('playerDropdown').style.display = 'none';
-        highlightedIndex = -1;
     }
     
     function clearSelection() {
@@ -329,15 +316,15 @@
     }
     
     function updateGuessButton() {
-        const guessButton = document.getElementById('guessButton');
+        const button = document.getElementById('guessButton');
         if (selectedPlayerIndex !== null && !gameOver) {
-            guessButton.disabled = false;
-            guessButton.style.cursor = 'pointer';
-            guessButton.style.background = '#007cba';
+            button.disabled = false;
+            button.style.background = '#007cba';
+            button.style.cursor = 'pointer';
         } else {
-            guessButton.disabled = true;
-            guessButton.style.cursor = 'not-allowed';
-            guessButton.style.background = '#ccc';
+            button.disabled = true;
+            button.style.background = '#ccc';
+            button.style.cursor = 'not-allowed';
         }
     }
     
@@ -345,49 +332,41 @@
         const teamHintButton = document.getElementById('teamHintButton');
         const initialHintButton = document.getElementById('initialHintButton');
         
-        // Team hint available after 4 wrong guesses
-        if (wrongGuesses >= 4 && !teamHintUsed && !gameOver) {
+        // Team hint becomes available on 5th guess
+        if (wrongGuesses >= 4 && !teamHintUsed) {
             teamHintButton.disabled = false;
+            teamHintButton.style.background = '#007cba';
             teamHintButton.style.cursor = 'pointer';
-            teamHintButton.style.background = '#6bb6ff';
-        } else if (teamHintUsed) {
-            teamHintButton.style.background = '#6c757d';
-            teamHintButton.disabled = true;
         }
         
-        // Initial hint available after 6 wrong guesses
-        if (wrongGuesses >= 6 && !initialHintUsed && !gameOver) {
+        // Initial hint becomes available on 7th guess
+        if (wrongGuesses >= 6 && !initialHintUsed) {
             initialHintButton.disabled = false;
+            initialHintButton.style.background = '#007cba';
             initialHintButton.style.cursor = 'pointer';
-            initialHintButton.style.background = '#6bb6ff';
-        } else if (initialHintUsed) {
-            initialHintButton.style.background = '#6c757d';
-            initialHintButton.disabled = true;
         }
     }
     
     function useTeamHint() {
-        if (teamHintUsed || wrongGuesses < 4 || gameOver) return;
-        
-        teamHintUsed = true;
-        const teamHintButton = document.getElementById('teamHintButton');
-        teamHintButton.textContent = targetPlayer.Team;
-        teamHintButton.style.background = '#6c757d';
-        teamHintButton.disabled = true;
-        teamHintButton.style.cursor = 'not-allowed';
+        if (wrongGuesses >= 4 && !teamHintUsed) {
+            teamHintUsed = true;
+            const button = document.getElementById('teamHintButton');
+            button.textContent = targetPlayer.Team;
+            button.disabled = true;
+            button.style.background = '#28a745';
+            button.style.cursor = 'not-allowed';
+        }
     }
     
     function useInitialHint() {
-        if (initialHintUsed || wrongGuesses < 6 || gameOver) return;
-        
-        initialHintUsed = true;
-        const initialHintButton = document.getElementById('initialHintButton');
-        const firstName = targetPlayer.Player.split(' ')[0];
-        const initial = firstName.charAt(0).toUpperCase();
-        initialHintButton.textContent = initial;
-        initialHintButton.style.background = '#6c757d';
-        initialHintButton.disabled = true;
-        initialHintButton.style.cursor = 'not-allowed';
+        if (wrongGuesses >= 6 && !initialHintUsed) {
+            initialHintUsed = true;
+            const button = document.getElementById('initialHintButton');
+            button.textContent = targetPlayer.Player.charAt(0);
+            button.disabled = true;
+            button.style.background = '#28a745';
+            button.style.cursor = 'not-allowed';
+        }
     }
     
     function selectRandomTarget() {
@@ -401,36 +380,36 @@
         
         const guessedPlayer = playersData[selectedPlayerIndex];
         
-        // Check if already guessed
-        if (guesses.some(g => g.Player === guessedPlayer.Player)) {
-            alert('You already guessed that player!');
+        // Check if player has already been guessed
+        if (guesses.some(guess => guess.Player === guessedPlayer.Player)) {
+            alert('You have already guessed this player!');
             return;
         }
         
         guesses.push(guessedPlayer);
-        updateGuessesDisplay();
         
-        // Check for win
+        // Check if it's a correct guess
         if (guessedPlayer.Player === targetPlayer.Player) {
             gameWon = true;
             gameOver = true;
             showGameResult(true);
         } else {
             wrongGuesses++;
+            updateHintButtons();
+            
+            // Check if max guesses reached
             if (guesses.length >= maxGuesses) {
                 gameOver = true;
                 showGameResult(false);
             }
         }
         
-        updateGuessCount();
-        updateHintButtons();
-        
-        // Reset input
+        // Clear input and update display
         document.getElementById('playerInput').value = '';
         selectedPlayerIndex = null;
-        hideDropdown();
         updateGuessButton();
+        updateGuessesDisplay();
+        updateGuessCount();
     }
     
     function updateGuessesDisplay() {
