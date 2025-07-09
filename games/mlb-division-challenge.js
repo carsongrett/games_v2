@@ -184,7 +184,7 @@ class MLBDivisionGame {
     }
 
     parseStandingsDataByDivisions(data) {
-        console.log('Parsing API data by divisions:', data);
+        console.log('🔄 DIVISION: Parsing API data by divisions using same logic as standings game');
         
         // Reset divisions
         Object.keys(this.divisions).forEach(key => {
@@ -192,20 +192,14 @@ class MLBDivisionGame {
         });
         this.allTeams = [];
 
+        // Use the SAME parsing logic as the standings game
         if (data.records && data.records.length > 0) {
+            let allTeamsTemp = [];
+            
             data.records.forEach(division => {
-                console.log(`🔍 DIVISION: Found record:`, {
-                    hasTeamRecords: !!division.teamRecords,
-                    hasDivision: !!division.division,
-                    divisionObject: division.division,
-                    standingsType: division.standingsType,
-                    teamCount: division.teamRecords ? division.teamRecords.length : 0
-                });
-                if (division.teamRecords && division.division) {
-                    const divisionName = division.division.name;
-                    console.log(`🏟️ DIVISION: Processing division: "${divisionName}" (${division.teamRecords.length} teams)`);
-                    
-                    division.teamRecords.forEach((team, index) => {
+                if (division.teamRecords) {
+                    division.teamRecords.forEach(team => {
+                        // Use our team league mapping instead of API league info
                         const leagueAbbr = this.teamLeagueMap[team.team.name] || 'Unknown';
                         
                         // Log warning for unmapped teams
@@ -220,8 +214,6 @@ class MLBDivisionGame {
                             losses: team.losses || 0,
                             winningPercentage: team.winningPercentage || '0.000',
                             leagueAbbr: leagueAbbr,
-                            divisionName: divisionName,
-                            divisionRank: index + 1, // API should already be sorted by division standings
                             revealed: false,
                             guessed: false,
                             correctGuess: null
@@ -229,52 +221,73 @@ class MLBDivisionGame {
 
                         // Only add teams we can properly map to a league
                         if (leagueAbbr !== 'Unknown') {
-                            // Map API division names to our division keys
-                            let divisionKey = null;
-                            if (divisionName && divisionName.includes('American League East')) divisionKey = 'AL East';
-                            else if (divisionName && divisionName.includes('American League Central')) divisionKey = 'AL Central';
-                            else if (divisionName && divisionName.includes('American League West')) divisionKey = 'AL West';
-                            else if (divisionName && divisionName.includes('National League East')) divisionKey = 'NL East';
-                            else if (divisionName && divisionName.includes('National League Central')) divisionKey = 'NL Central';
-                            else if (divisionName && divisionName.includes('National League West')) divisionKey = 'NL West';
-                            
-                            if (divisionKey && this.divisions[divisionKey]) {
-                                this.divisions[divisionKey].push(teamData);
-                                this.allTeams.push(teamData);
-                                console.log(`✅ Added ${teamData.name} to ${divisionKey} (Rank ${teamData.divisionRank})`);
-                            } else {
-                                console.warn(`⚠️ DIVISION: Could not map division: "${divisionName}" for team ${teamData.name}`);
-                            }
+                            allTeamsTemp.push(teamData);
+                            console.log('✅ DIVISION: Found team:', teamData.name, 'League:', teamData.leagueAbbr, 'Record:', teamData.wins + '-' + teamData.losses);
                         }
                     });
                 }
             });
 
-            // Sort each division by winning percentage (just in case API isn't sorted)
-            Object.keys(this.divisions).forEach(divisionKey => {
-                this.divisions[divisionKey].sort((a, b) => parseFloat(b.winningPercentage) - parseFloat(a.winningPercentage));
-                // Update division ranks after sorting
-                this.divisions[divisionKey].forEach((team, index) => {
-                    team.divisionRank = index + 1;
-                });
-            });
-            
-            // Log division summary
-            Object.keys(this.divisions).forEach(divisionKey => {
-                const teams = this.divisions[divisionKey];
-                console.log(`${divisionKey}: ${teams.length} teams -`, teams.map(t => `${t.divisionRank}. ${t.name} (${t.wins}-${t.losses})`));
-            });
+            // Now group teams by their actual divisions based on team names
+            this.groupTeamsByDivisions(allTeamsTemp);
             
         }
 
         // If we don't have enough teams, use sample data
         const totalTeamsFound = Object.values(this.divisions).reduce((sum, div) => sum + div.length, 0);
         if (totalTeamsFound < 28) {
-            console.log(`Not enough teams found (${totalTeamsFound}), loading sample data`);
+            console.log(`🚨 DIVISION: Not enough teams found (${totalTeamsFound}), loading sample data`);
             this.loadSampleData();
         } else {
-            console.log(`✅ Successfully using API data: ${totalTeamsFound} teams across all divisions`);
+            console.log(`✅ DIVISION: Successfully using API data: ${totalTeamsFound} teams across all divisions`);
         }
+    }
+
+    groupTeamsByDivisions(allTeamsTemp) {
+        // Group teams by divisions based on their team names (since API division info is unreliable)
+        const divisionMapping = {
+            'AL East': ['Baltimore Orioles', 'Boston Red Sox', 'New York Yankees', 'Tampa Bay Rays', 'Toronto Blue Jays'],
+            'AL Central': ['Chicago White Sox', 'Cleveland Guardians', 'Detroit Tigers', 'Kansas City Royals', 'Minnesota Twins'],
+            'AL West': ['Houston Astros', 'Los Angeles Angels', 'Oakland Athletics', 'Las Vegas Athletics', 'Athletics', 'Seattle Mariners', 'Texas Rangers'],
+            'NL East': ['Atlanta Braves', 'Miami Marlins', 'New York Mets', 'Philadelphia Phillies', 'Washington Nationals'],
+            'NL Central': ['Chicago Cubs', 'Cincinnati Reds', 'Milwaukee Brewers', 'Pittsburgh Pirates', 'St. Louis Cardinals'],
+            'NL West': ['Arizona Diamondbacks', 'Colorado Rockies', 'Los Angeles Dodgers', 'San Diego Padres', 'San Francisco Giants']
+        };
+
+        // Assign teams to divisions
+        allTeamsTemp.forEach(team => {
+            let assignedDivision = null;
+            for (const [divisionKey, teamNames] of Object.entries(divisionMapping)) {
+                if (teamNames.includes(team.name)) {
+                    assignedDivision = divisionKey;
+                    break;
+                }
+            }
+            
+            if (assignedDivision) {
+                this.divisions[assignedDivision].push(team);
+                this.allTeams.push(team);
+                console.log(`✅ DIVISION: Assigned ${team.name} to ${assignedDivision}`);
+            } else {
+                console.warn(`⚠️ DIVISION: Could not assign ${team.name} to any division`);
+            }
+        });
+
+        // Sort each division by winning percentage and assign ranks
+        Object.keys(this.divisions).forEach(divisionKey => {
+            this.divisions[divisionKey].sort((a, b) => parseFloat(b.winningPercentage) - parseFloat(a.winningPercentage));
+            // Update division ranks after sorting
+            this.divisions[divisionKey].forEach((team, index) => {
+                team.divisionRank = index + 1;
+                team.divisionName = divisionKey;
+            });
+        });
+        
+        // Log division summary
+        Object.keys(this.divisions).forEach(divisionKey => {
+            const teams = this.divisions[divisionKey];
+            console.log(`🏟️ ${divisionKey}: ${teams.length} teams -`, teams.map(t => `${t.divisionRank}. ${t.name} (${t.wins}-${t.losses})`));
+        });
     }
 
     loadSampleData() {
