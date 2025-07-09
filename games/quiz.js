@@ -12,7 +12,7 @@ let gameState = {
 // Game initialization
 window.initializeGame = function() {
     setupGameUI();
-    initializeGame();
+    initializeGameAsync();
 };
 
 function setupGameUI() {
@@ -392,7 +392,6 @@ function setupGameUI() {
     `;
     
     // Add event listeners after DOM is created
-    setupEventListeners();
 }
 
 function setupEventListeners() {
@@ -408,17 +407,19 @@ function setupEventListeners() {
     document.getElementById('home-btn').addEventListener('click', goHome);
 }
 
-async function initializeGame() {
+async function initializeGameAsync() {
     gameState.isLoading = true;
     showLoading(true);
     
     try {
         await loadStandingsData();
+        setupEventListeners();
         setupNewQuestion();
         showLoading(false);
     } catch (error) {
         console.error('Error initializing game:', error);
         showError('Failed to load MLB standings data. Please try again.');
+        gameState.isLoading = false;
     }
 }
 
@@ -442,7 +443,10 @@ function showError(message) {
     `;
     
     // Add event listeners for error screen buttons
-    document.getElementById('retry-btn').addEventListener('click', initializeGame);
+    document.getElementById('retry-btn').addEventListener('click', () => {
+        setupGameUI();
+        initializeGameAsync();
+    });
     document.getElementById('error-home-btn').addEventListener('click', goHome);
 }
 
